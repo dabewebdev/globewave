@@ -79,10 +79,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      "globeradio_favorites",
-      JSON.stringify(favorites)
-    );
+    localStorage.setItem("globeradio_favorites", JSON.stringify(favorites));
   }, [favorites]);
 
   const filteredCountries = useMemo(() => {
@@ -108,6 +105,35 @@ export default function App() {
         ? prev.filter((id) => id !== stationId)
         : [...prev, stationId]
     );
+  };
+
+  const playNext = () => {
+    if (liveStations.length === 0) return;
+
+    const currentIndex = liveStations.findIndex(
+      (station) => station.id === currentStation.id
+    );
+
+    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+    const next = liveStations[(safeIndex + 1) % liveStations.length];
+
+    selectStation(next);
+  };
+
+  const playPrev = () => {
+    if (liveStations.length === 0) return;
+
+    const currentIndex = liveStations.findIndex(
+      (station) => station.id === currentStation.id
+    );
+
+    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+    const prev =
+      liveStations[
+        (safeIndex - 1 + liveStations.length) % liveStations.length
+      ];
+
+    selectStation(prev);
   };
 
   const isFavorite = favorites.includes(currentStation.id);
@@ -148,7 +174,9 @@ export default function App() {
         />
 
         <button
-          className={showFavoritesOnly ? "filter-toggle active" : "filter-toggle"}
+          className={
+            showFavoritesOnly ? "filter-toggle active" : "filter-toggle"
+          }
           onClick={() => setShowFavoritesOnly((prev) => !prev)}
         >
           ♥ Favorites Only
@@ -222,12 +250,18 @@ export default function App() {
 
           <p className="genre">{currentStation.genre}</p>
 
-          <button
-            onClick={togglePlay}
-            className={playing ? "play-button pause" : "play-button"}
-          >
-            {playing ? "⏸ Pause" : "▶ Play"}
-          </button>
+          <div className="player-controls">
+            <button onClick={playPrev}>⏮</button>
+
+            <button
+              onClick={togglePlay}
+              className={playing ? "play-button pause" : "play-button"}
+            >
+              {playing ? "⏸ Pause" : "▶ Play"}
+            </button>
+
+            <button onClick={playNext}>⏭</button>
+          </div>
         </div>
 
         <div className="mini-player">
@@ -259,12 +293,18 @@ export default function App() {
             className="volume-slider"
           />
 
-          <button
-            onClick={togglePlay}
-            className={playing ? "mini-play pause" : "mini-play"}
-          >
-            {status === "loading" ? "…" : playing ? "❚❚" : "▶"}
-          </button>
+          <div className="player-controls mini-controls">
+            <button onClick={playPrev}>⏮</button>
+
+            <button
+              onClick={togglePlay}
+              className={playing ? "mini-play pause" : "mini-play"}
+            >
+              {status === "loading" ? "…" : playing ? "❚❚" : "▶"}
+            </button>
+
+            <button onClick={playNext}>⏭</button>
+          </div>
         </div>
       </section>
     </main>
