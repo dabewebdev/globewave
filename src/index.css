@@ -708,15 +708,22 @@ select.search-input option {
     line-height: 1;
   }
 
-  .mini-player .play-button,
-  .mini-player .mini-play {
-    font-size: 0;
+  @media (max-width: 800px) {
+  .mini-player .mini-play,
+  .mini-player .play-button {
+    font-size: 20px !important;
+    line-height: 1 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
   }
 
-  .mini-player .play-button::before,
-  .mini-player .mini-play::before {
-    font-size: 18px;
+  .mini-player .mini-play::before,
+  .mini-player .play-button::before {
+    content: none !important;
   }
+}
 
   .mini-info {
     min-width: 0;
