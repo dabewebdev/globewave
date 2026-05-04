@@ -529,3 +529,88 @@ select.search-input option {
   color: white;
   cursor: pointer;
 }
+
+/* ============================= */
+/* MOBILE OVERFLOW FIX */
+/* ============================= */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Make every main wrapper stay inside phone screen */
+#root,
+.app,
+.container,
+.main,
+main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Globe/map area must not push page sideways */
+.globe-section,
+.map-section,
+.radio-map,
+.globe-container,
+.world-map,
+.earth-section {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fix the large station card on the right */
+.now-playing-card,
+.featured-station,
+.station-preview,
+.station-info-card,
+.current-station-card {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  width: calc(100% - 32px) !important;
+  max-width: calc(100% - 32px) !important;
+  margin: 16px auto !important;
+}
+
+/* If globe + station card are inside flex/grid, stack them on mobile */
+@media (max-width: 768px) {
+  .globe-section,
+  .map-section,
+  .radio-map,
+  .globe-container,
+  .earth-section {
+    display: block !important;
+  }
+
+  .now-playing-card,
+  .featured-station,
+  .station-preview,
+  .station-info-card,
+  .current-station-card {
+    display: block !important;
+  }
+}
+
+/* Fix bottom player */
+.player,
+.mini-player,
+.bottom-player,
+.audio-player,
+.now-playing-bar {
+  width: calc(100% - 24px) !important;
+  max-width: calc(100% - 24px) !important;
+  left: 12px !important;
+  right: 12px !important;
+  transform: none !important;
+}
