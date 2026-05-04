@@ -6,6 +6,7 @@ html,
 body,
 #root {
   margin: 0;
+  width: 100%;
   min-height: 100%;
 }
 
@@ -16,12 +17,19 @@ body {
   overflow: hidden;
 }
 
-button {
+button,
+input,
+select {
   font: inherit;
 }
 
+/* ============================= */
+/* DESKTOP LAYOUT */
+/* ============================= */
+
 .app {
   height: 100vh;
+  width: 100%;
   display: flex;
   overflow: hidden;
   background:
@@ -35,6 +43,7 @@ button {
   height: 100vh;
   padding: 24px;
   overflow: hidden;
+  flex-shrink: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(2, 6, 23, 0.82);
   backdrop-filter: blur(18px);
@@ -51,16 +60,66 @@ button {
   margin-bottom: 28px;
 }
 
+.search-input {
+  width: 100%;
+  height: 50px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+select.search-input {
+  color-scheme: dark;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+select.search-input option {
+  background-color: #020617;
+  color: white;
+}
+
+.filter-toggle {
+  width: 100%;
+  height: 48px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.filter-toggle.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
 .station-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: calc(100vh - 260px);
+  height: calc(100vh - 330px);
   overflow-y: auto;
   padding-right: 6px;
 }
 
 .station-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   text-align: left;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -90,6 +149,36 @@ button {
   font-size: 14px;
 }
 
+.station-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.favorite-button {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+}
+
+.favorite-button.active {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+/* ============================= */
+/* MAIN STAGE / GLOBE */
+/* ============================= */
+
 .stage {
   position: relative;
   flex: 1;
@@ -97,6 +186,7 @@ button {
   display: grid;
   place-items: center;
   overflow: hidden;
+  min-width: 0;
 }
 
 .glow {
@@ -106,13 +196,31 @@ button {
   border-radius: 999px;
   background: radial-gradient(circle, rgba(16, 185, 129, 0.22), transparent 65%);
   filter: blur(10px);
+  pointer-events: none;
 }
+
+.globe-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.95;
+}
+
+.globe-scene canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ============================= */
+/* NOW PLAYING CARD */
+/* ============================= */
 
 .now-playing {
   position: absolute;
-  left: 360px;
+  left: clamp(40px, 18vw, 360px);
   bottom: 110px;
   width: 360px;
+  max-width: calc(100% - 80px);
   padding: 24px;
   border-radius: 24px;
   background: rgba(15, 23, 42, 0.72);
@@ -120,20 +228,6 @@ button {
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(22px);
   z-index: 3;
-}
-
-.now-playing h1 {
-  font-size: clamp(24px, 4vw, 56px);
-  line-height: 1.1;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-}
-
-.now-playing h1 {
-  font-size: clamp(28px, 3vw, 46px);
-  line-height: 1.05;
-  margin: 12px 0;
 }
 
 .eyebrow {
@@ -145,13 +239,34 @@ button {
 }
 
 .now-playing h1 {
-  font-size: clamp(36px, 5vw, 64px);
-  line-height: 1;
+  font-size: clamp(28px, 3vw, 54px);
+  line-height: 1.05;
   margin: 12px 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .genre {
   color: rgba(255, 255, 255, 0.65);
+}
+
+.big-favorite {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.big-favorite.active {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.18);
 }
 
 .play-button {
@@ -169,124 +284,19 @@ button {
   background: #ef4444;
 }
 
-@media (max-width: 800px) {
-  .app {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    max-height: 45vh;
-    overflow: auto;
-  }
-
-  .stage {
-    min-height: 55vh;
-  }
-}
-
-.globe-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.95;
-}
-
-.globe-scene canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.search-input {
-  width: 100%;
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
-  outline: none;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.station-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.station-main {
-  flex: 1;
-  text-align: left;
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-}
-
-.favorite-button {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.45);
-  cursor: pointer;
-}
-
-.favorite-button.active {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.18);
-}
-
-.big-favorite {
-  position: absolute;
-  right: 32px;
-  top: 32px;
-  width: 46px;
-  height: 46px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.big-favorite.active {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.18);
-}
-.filter-toggle {
-  width: 100%;
-  margin-bottom: 18px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.72);
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.filter-toggle.active {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-}
+/* ============================= */
+/* MINI PLAYER */
+/* ============================= */
 
 .mini-player {
   position: fixed;
-  right: 32px;
-  bottom: 28px;
+  left: 360px;
+  right: 24px;
+  bottom: 24px;
   z-index: 999;
-  width: 360px;
+  min-height: 76px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 16px 18px;
   border-radius: 24px;
@@ -296,85 +306,26 @@ button {
   backdrop-filter: blur(22px);
 }
 
+.mini-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.mini-info strong,
 .mini-player strong {
   display: block;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #34d399;
   margin-bottom: 4px;
 }
 
+.mini-info span,
 .mini-player span {
   color: rgba(255, 255, 255, 0.62);
-  font-size: 14px;
-}
-
-.mini-play {
-  width: 46px;
-  height: 46px;
-  border-radius: 999px;
-  border: none;
-  background: #10b981;
-  color: white;
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.mini-play.pause {
-  background: #ef4444;
-}
-
-.error-text {
-  color: #f87171;
-  font-size: 14px;
-  margin: 0 0 16px;
-}
-
-@media (max-width: 800px) {
-  .mini-player {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: auto;
-  }
-}
-
-select.search-input {
-  color-scheme: dark;
-  background-color: rgba(255, 255, 255, 0.06);
-  color: white;
-}
-
-select.search-input option {
-  background-color: #020617;
-  color: white;
-}
-
-.mini-player {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.mini-info strong {
-  display: block;
-  max-width: 180px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mini-info span {
   font-size: 12px;
-  opacity: 0.7;
-}
-
-.volume-slider {
-  width: 100px;
-  accent-color: #34d399;
-}
-
-.mini-info {
-  min-width: 0;
-  flex: 1;
 }
 
 .stream-status {
@@ -400,14 +351,39 @@ select.search-input option {
   color: rgba(255, 255, 255, 0.5);
 }
 
-.mute-button {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
+.error-text {
+  color: #f87171;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.player-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.player-controls button,
+.mute-button,
+.mini-play {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
   border: none;
   background: rgba(255, 255, 255, 0.08);
   color: white;
   cursor: pointer;
+  font-weight: 800;
+}
+
+.mini-play {
+  background: #10b981;
+}
+
+.mini-play.pause {
+  background: #ef4444;
 }
 
 .volume-slider {
@@ -415,24 +391,186 @@ select.search-input option {
   accent-color: #34d399;
 }
 
+/* ============================= */
+/* TABLET */
+/* ============================= */
+
+@media (max-width: 1100px) {
+  .now-playing {
+    left: 40px;
+    width: 330px;
+  }
+
+  .mini-player {
+    left: 364px;
+  }
+}
+
+/* ============================= */
+/* MOBILE */
+/* ============================= */
+
 @media (max-width: 800px) {
   body {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .app {
-    height: 100vh;
-    display: block;
-    overflow: hidden;
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .sidebar {
     width: 100%;
-    height: 44vh;
-    padding: 22px;
-    overflow: hidden;
+    height: auto;
+    max-height: none;
+    padding: 30px 22px 16px;
+    overflow: visible;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .brand {
+    font-size: 36px;
+    line-height: 1.1;
+  }
+
+  .tagline {
+    font-size: 18px;
+    margin-bottom: 22px;
+  }
+
+  .search-input {
+    height: 62px;
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    font-size: 18px;
+    border-radius: 20px;
+  }
+
+  .filter-toggle {
+    height: 60px;
+    margin-bottom: 14px;
+    font-size: 17px;
+    border-radius: 999px;
+  }
+
+  .station-list {
+    display: none;
+  }
+
+  .stage {
+    width: 100%;
+    height: 58vh;
+    min-height: 430px;
+    max-height: 520px;
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .globe-scene {
+    position: absolute;
+    inset: 0;
+    transform: scale(1.1);
+    transform-origin: center center;
+    opacity: 0.95;
+  }
+
+  .now-playing {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 120px;
+    width: auto;
+    max-width: none;
+    padding: 18px;
+    border-radius: 22px;
+    z-index: 5;
+  }
+
+  .now-playing h1 {
+    font-size: clamp(28px, 9vw, 42px);
+    line-height: 1.05;
+    margin: 8px 0;
+    padding-right: 54px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+  }
+
+  .big-favorite {
+    right: 18px;
+    top: 18px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .play-button {
+    margin-top: 18px;
+    padding: 12px 20px;
+  }
+
+  .mini-player {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    width: auto;
+    min-height: 92px;
+    padding: 14px;
+    border-radius: 22px;
+    gap: 10px;
+    z-index: 9999;
+  }
+
+  .mini-info strong,
+  .mini-player strong {
+    max-width: 110px;
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .mini-info span,
+  .mini-player span {
+    font-size: 13px;
+  }
+
+  .stream-status {
+    font-size: 13px;
+  }
+
+  .volume-slider {
+    width: 82px;
+  }
+
+  .player-controls {
+    gap: 8px;
+  }
+
+  .player-controls button,
+  .mute-button,
+  .mini-play {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+}
+
+/* ============================= */
+/* SMALL PHONES */
+/* ============================= */
+
+@media (max-width: 430px) {
+  .sidebar {
+    padding: 26px 20px 14px;
   }
 
   .brand {
@@ -441,176 +579,52 @@ select.search-input option {
 
   .tagline {
     font-size: 17px;
-    margin-bottom: 18px;
   }
 
   .search-input {
-    height: 54px;
-    margin-bottom: 12px;
-    font-size: 16px;
+    height: 58px;
+    font-size: 17px;
   }
 
   .filter-toggle {
-    height: 52px;
-    margin-bottom: 12px;
-    font-size: 16px;
-  }
-
-  .station-list {
-    height: calc(44vh - 270px);
-    overflow-y: auto;
+    height: 56px;
   }
 
   .stage {
-    position: relative;
     height: 56vh;
-    overflow: hidden;
+    min-height: 390px;
   }
 
   .globe-scene {
-    inset: 0;
-    transform: scale(1.18);
-    transform-origin: center;
-    opacity: 0.95;
+    transform: scale(1.16);
   }
 
   .now-playing {
-  max-width: 420px;
-  width: 90%;
-  padding: 20px;
-}
+    left: 14px;
+    right: 14px;
+    bottom: 122px;
+    padding: 16px;
+  }
+
+  .now-playing h1 {
+    font-size: clamp(24px, 8vw, 36px);
+  }
 
   .mini-player {
-    left: 12px;
-    right: 12px;
-    bottom: 16px;
-    width: auto;
-    padding: 16px;
-    border-radius: 22px;
-    z-index: 9999;
-  }
-
-  .mini-player strong {
-    font-size: 18px;
-    line-height: 1.1;
-  }
-
-  .mini-player span {
-    font-size: 14px;
-  }
-
-  .stream-status {
-    font-size: 13px;
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    padding: 12px;
   }
 
   .volume-slider {
-    width: 90px;
+    width: 70px;
   }
 
+  .player-controls button,
   .mute-button,
   .mini-play {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
   }
-}
-
-.player-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.player-controls button {
-  background: rgba(255,255,255,0.08);
-  border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-}
-
-/* ============================= */
-/* MOBILE OVERFLOW FIX */
-/* ============================= */
-
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/* Make every main wrapper stay inside phone screen */
-#root,
-.app,
-.container,
-.main,
-main {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* Globe/map area must not push page sideways */
-.globe-section,
-.map-section,
-.radio-map,
-.globe-container,
-.world-map,
-.earth-section {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Fix the large station card on the right */
-.now-playing-card,
-.featured-station,
-.station-preview,
-.station-info-card,
-.current-station-card {
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  transform: none !important;
-  width: calc(100% - 32px) !important;
-  max-width: calc(100% - 32px) !important;
-  margin: 16px auto !important;
-}
-
-/* If globe + station card are inside flex/grid, stack them on mobile */
-@media (max-width: 768px) {
-  .globe-section,
-  .map-section,
-  .radio-map,
-  .globe-container,
-  .earth-section {
-    display: block !important;
-  }
-
-  .now-playing-card,
-  .featured-station,
-  .station-preview,
-  .station-info-card,
-  .current-station-card {
-    display: block !important;
-  }
-}
-
-/* Fix bottom player */
-.player,
-.mini-player,
-.bottom-player,
-.audio-player,
-.now-playing-bar {
-  width: calc(100% - 24px) !important;
-  max-width: calc(100% - 24px) !important;
-  left: 12px !important;
-  right: 12px !important;
-  transform: none !important;
 }
