@@ -628,3 +628,102 @@ select.search-input option {
     height: 42px;
   }
 }
+
+/* ============================= */
+/* FINAL PLAYER CLEANUP FIX */
+/* ============================= */
+
+/* Desktop: make big Now Playing controls look even */
+.now-playing .player-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.now-playing .player-controls button {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 14px;
+  line-height: 1;
+}
+
+.now-playing .player-controls .play-button {
+  width: auto;
+  min-width: 74px;
+  height: 46px;
+  padding: 0 18px;
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+/* Mobile: hide the big card controls so there is only ONE player */
+@media (max-width: 800px) {
+  .now-playing .player-controls,
+  .now-playing .play-button {
+    display: none !important;
+  }
+
+  .now-playing {
+    bottom: 128px;
+  }
+
+  .mini-player {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    width: auto;
+    min-height: 92px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mini-player .player-controls {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .mini-player .player-controls button,
+  .mini-player .mute-button,
+  .mini-player .mini-play {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    line-height: 1;
+  }
+
+  .mini-player .play-button,
+  .mini-player .mini-play {
+    font-size: 0;
+  }
+
+  .mini-player .play-button::before,
+  .mini-player .mini-play::before {
+    font-size: 18px;
+  }
+
+  .mini-info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mini-info strong {
+    max-width: 120px;
+  }
+}
