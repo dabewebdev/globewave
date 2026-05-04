@@ -11,6 +11,7 @@ import {
 
 export default function App() {
   const [query, setQuery] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
   const [countryList, setCountryList] = useState(COUNTRIES);
   const [selectedCountry, setSelectedCountry] = useState("PH");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -25,16 +26,16 @@ export default function App() {
   const [error, setError] = useState("");
 
   const {
-  currentStation,
-  selectStation,
-  playing,
-  togglePlay,
-  volume,
-  setVolume,
-  muted,
-  toggleMute,
-  status
-} = usePlayer(stations[0]);
+    currentStation,
+    selectStation,
+    playing,
+    togglePlay,
+    volume,
+    setVolume,
+    muted,
+    toggleMute,
+    status
+  } = usePlayer(stations[0]);
 
   const loadLiveStations = async () => {
     try {
@@ -60,9 +61,9 @@ export default function App() {
   };
 
   useEffect(() => {
-  loadLiveStations();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [selectedCountry]);
+    loadLiveStations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCountry]);
 
   useEffect(() => {
     async function loadCountries() {
@@ -70,8 +71,8 @@ export default function App() {
         const countries = await getRadioCountries();
         setCountryList(countries);
       } catch {
-  console.log("Using fallback countries");
-}
+        console.log("Using fallback countries");
+      }
     }
 
     loadCountries();
@@ -83,6 +84,12 @@ export default function App() {
       JSON.stringify(favorites)
     );
   }, [favorites]);
+
+  const filteredCountries = useMemo(() => {
+    return countryList.filter((country) =>
+      country.label.toLowerCase().includes(countrySearch.toLowerCase())
+    );
+  }, [countryList, countrySearch]);
 
   const filteredStations = useMemo(() => {
     return liveStations.filter((station) => {
@@ -111,6 +118,13 @@ export default function App() {
         <div className="brand">🌍 GlobeWave</div>
         <p className="tagline">Premium world radio experience</p>
 
+        <input
+          className="search-input"
+          placeholder="Search country..."
+          value={countrySearch}
+          onChange={(e) => setCountrySearch(e.target.value)}
+        />
+
         <select
           className="search-input"
           value={selectedCountry}
@@ -119,7 +133,7 @@ export default function App() {
             setQuery("");
           }}
         >
-          {countryList.map((country) => (
+          {filteredCountries.map((country) => (
             <option key={country.code} value={country.code}>
               {country.label}
             </option>
@@ -217,41 +231,41 @@ export default function App() {
         </div>
 
         <div className="mini-player">
-  <div className="mini-info">
-    <strong>{currentStation.name}</strong>
-    <span>
-      {currentStation.city}, {currentStation.country}
-    </span>
+          <div className="mini-info">
+            <strong>{currentStation.name}</strong>
+            <span>
+              {currentStation.city}, {currentStation.country}
+            </span>
 
-    <small className={`stream-status ${status}`}>
-      {status === "loading" && "Connecting..."}
-      {status === "playing" && "Live now"}
-      {status === "paused" && "Paused"}
-      {status === "error" && "Stream unavailable"}
-      {status === "idle" && "Ready"}
-    </small>
-  </div>
+            <small className={`stream-status ${status}`}>
+              {status === "loading" && "Connecting..."}
+              {status === "playing" && "Live now"}
+              {status === "paused" && "Paused"}
+              {status === "error" && "Stream unavailable"}
+              {status === "idle" && "Ready"}
+            </small>
+          </div>
 
-  <button className="mute-button" onClick={toggleMute}>
-    {muted || volume === 0 ? "🔇" : volume < 40 ? "🔉" : "🔊"}
-  </button>
+          <button className="mute-button" onClick={toggleMute}>
+            {muted || volume === 0 ? "🔇" : volume < 40 ? "🔉" : "🔊"}
+          </button>
 
-  <input
-    type="range"
-    min="0"
-    max="100"
-    value={volume}
-    onChange={(e) => setVolume(Number(e.target.value))}
-    className="volume-slider"
-  />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            onChange={(e) => setVolume(Number(e.target.value))}
+            className="volume-slider"
+          />
 
-  <button
-    onClick={togglePlay}
-    className={playing ? "mini-play pause" : "mini-play"}
-  >
-    {status === "loading" ? "…" : playing ? "❚❚" : "▶"}
-  </button>
-</div>
+          <button
+            onClick={togglePlay}
+            className={playing ? "mini-play pause" : "mini-play"}
+          >
+            {status === "loading" ? "…" : playing ? "❚❚" : "▶"}
+          </button>
+        </div>
       </section>
     </main>
   );
