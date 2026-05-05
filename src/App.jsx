@@ -1,312 +1,352 @@
 import { useEffect, useMemo, useState } from "react";
-import GlobeScene from "./components/GlobeScene";
-import stations from "./data/stations";
-import usePlayer from "./hooks/usePlayer";
+import TopBar from "./components/TopBar.jsx";
+import Sidebar from "./components/Sidebar.jsx";
+import GlobePanel from "./components/GlobePanel.jsx";
+import PlayerBar from "./components/PlayerBar.jsx";
+import NowPlayingSheet from "./components/NowPlayingSheet.jsx";
+import SettingsPage from "./components/SettingsPage.jsx";
+import usePlayer from "./hooks/usePlayer.js";
 import {
-  COUNTRIES,
-  getRadioCountries,
+  FALLBACK_COUNTRIES,
+  getCountries,
   getStationsByCountry,
-  searchRadioStations
-} from "./services/radioApi";
+  getTopStations,
+} from "./services/radioApi.js";
+
+const FAV_KEY = "radiome:favorites";
+const COUNTRY_KEY = "radiome:country";
+const SELECTED_KEY = "radiome:selected";
+const SETTINGS_KEY = "radiome:settings";
+
+const DEFAULT_SETTINGS = {
+  reduceMotion: false,
+  highContrast: false,
+  autoNext: true,
+};
+
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJSON(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function App() {
+  const [route, setRoute] = useState("browse");
   const [query, setQuery] = useState("");
-  const [countrySearch, setCountrySearch] = useState("");
-  const [countryList, setCountryList] = useState(COUNTRIES);
-  const [selectedCountry, setSelectedCountry] = useState("PH");
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [country, setCountry] = useState(() => loadJSON(COUNTRY_KEY, "WW"));
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favorites, setFavorites] = useState(() => loadJSON(FAV_KEY, []));
+  const [selectedId, setSelectedId] = useState(() => loadJSON(SELECTED_KEY, null));
+  const [showSheet, setShowSheet] = useState(false);
+  const [settings, setSettings] = useState(() => ({
+    ...DEFAULT_SETTINGS,
+    ...loadJSON(SETTINGS_KEY, {}),
+  }));
 
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("globeradio_favorites");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [liveStations, setLiveStations] = useState(stations);
+  const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
+  const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
+  const player = usePlayer();
   const {
-    currentStation,
-    selectStation,
-    playing,
-    togglePlay,
+    active,
+    playState,
+    errorMsg,
+    elapsedSec,
     volume,
-    setVolume,
     muted,
+    play: playerPlay,
+    pause: playerPause,
+    stop: playerStop,
+    retry,
+    setVolume,
     toggleMute,
-    status
-  } = usePlayer(stations[0]);
+  } = player;
 
-  const loadLiveStations = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  // Persist favorites/country/selected/settings
+  useEffect(() => saveJSON(FAV_KEY, favorites), [favorites]);
+  useEffect(() => saveJSON(COUNTRY_KEY, country), [country]);
+  useEffect(() => saveJSON(SELECTED_KEY, selectedId), [selectedId]);
+  useEffect(() => saveJSON(SETTINGS_KEY, settings), [settings]);
 
-      const results = query.trim()
-        ? await searchRadioStations(query, selectedCountry)
-        : await getStationsByCountry(selectedCountry);
-
-      if (results.length === 0) {
-        setError("No stations found.");
-        return;
-      }
-
-      setLiveStations(results);
-      selectStation(results[0]);
-    } catch {
-      setError("Could not load live stations.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load countries once
   useEffect(() => {
-    loadLiveStations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCountry]);
-
-  useEffect(() => {
-    async function loadCountries() {
-      try {
-        const countries = await getRadioCountries();
-        setCountryList(countries);
-      } catch {
-        console.log("Using fallback countries");
-      }
-    }
-
-    loadCountries();
+    let cancelled = false;
+    getCountries()
+      .then((list) => {
+        if (!cancelled && list.length > 1) setCountries(list);
+      })
+      .catch(() => {
+        /* fallback already in state */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Load stations when country changes (or on mount). Search is local-only;
+  // a separate "Search Worldwide" button widens scope.
   useEffect(() => {
-    localStorage.setItem("globeradio_favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setLoadError("");
+    const fetcher = country === "WW" ? getTopStations() : getStationsByCountry(country);
+    fetcher
+      .then((list) => {
+        if (cancelled) return;
+        setStations(list);
+        if (list.length === 0) setLoadError("No stations available for this region.");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStations([]);
+        setLoadError("Couldn't reach the radio directory. Try again or pick another country.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
 
-  const filteredCountries = useMemo(() => {
-    return countryList.filter((country) =>
-      country.label.toLowerCase().includes(countrySearch.toLowerCase())
-    );
-  }, [countryList, countrySearch]);
+  // Local + tag filter
+  const filtered = useMemo(() => {
+    let arr = stations;
+    if (favoritesOnly) arr = arr.filter((s) => favorites.includes(s.id));
+    const q = query.trim().toLowerCase();
+    if (q) {
+      arr = arr.filter((s) => {
+        const blob = `${s.name} ${s.city} ${s.country} ${(s.tags || []).join(" ")}`.toLowerCase();
+        return blob.includes(q);
+      });
+    }
+    return arr;
+  }, [stations, favoritesOnly, favorites, query]);
 
-  const filteredStations = useMemo(() => {
-    return liveStations.filter((station) => {
-      const text = `${station.name} ${station.city} ${station.country} ${station.genre}`;
-      const matchesSearch = text.toLowerCase().includes(query.toLowerCase());
-      const matchesFavorite =
-        !showFavoritesOnly || favorites.includes(station.id);
+  const selectedStation = useMemo(
+    () => stations.find((s) => s.id === selectedId) || null,
+    [stations, selectedId]
+  );
 
-      return matchesSearch && matchesFavorite;
+  const select = (id) => {
+    setSelectedId(id);
+  };
+
+  const play = (id) => {
+    const s = stations.find((x) => x.id === id);
+    if (!s) return;
+    if (active && active.id === id && playState === "playing") {
+      playerPause();
+      return;
+    }
+    setSelectedId(id);
+    playerPlay(s);
+  };
+
+  const toggleFav = (id) => {
+    setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
+  };
+
+  const stepStation = (delta) => {
+    if (filtered.length === 0) return;
+    const baseList = filtered;
+    const currentIdx = baseList.findIndex((s) => s.id === (active?.id ?? selectedId));
+    const safeIdx = currentIdx === -1 ? 0 : currentIdx;
+    const next = baseList[(safeIdx + delta + baseList.length) % baseList.length];
+    play(next.id);
+  };
+
+  // Auto-play next on error if setting enabled
+  useEffect(() => {
+    if (!settings.autoNext) return;
+    if (playState !== "error") return;
+    const t = setTimeout(() => stepStation(1), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playState, settings.autoNext]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e) {
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === " " && active) {
+        e.preventDefault();
+        playerPause();
+      } else if (e.key === "Escape") {
+        setShowSheet(false);
+      } else if (e.key.toLowerCase() === "f" && selectedStation) {
+        toggleFav(selectedStation.id);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, selectedStation]);
+
+  // MediaSession (lock-screen / Bluetooth controls on mobile)
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    if (!active) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    navigator.mediaSession.metadata = new window.MediaMetadata({
+      title: active.name,
+      artist: `${active.city || ""} · ${active.country || ""}`.trim(),
+      album: "RadioMe",
     });
-  }, [query, favorites, showFavoritesOnly, liveStations]);
+    const handlers = [
+      ["play", () => active && playerPlay(active)],
+      ["pause", () => playerPause()],
+      ["stop", () => playerStop()],
+      ["previoustrack", () => stepStation(-1)],
+      ["nexttrack", () => stepStation(1)],
+    ];
+    handlers.forEach(([k, fn]) => {
+      try {
+        navigator.mediaSession.setActionHandler(k, fn);
+      } catch { /* unsupported action */ }
+    });
+    try {
+      navigator.mediaSession.playbackState =
+        playState === "playing" ? "playing" : playState === "paused" ? "paused" : "none";
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, playState]);
 
-  const toggleFavorite = (stationId) => {
-    setFavorites((prev) =>
-      prev.includes(stationId)
-        ? prev.filter((id) => id !== stationId)
-        : [...prev, stationId]
-    );
-  };
+  const updateSetting = (key, value) =>
+    setSettings((s) => ({ ...s, [key]: value }));
 
-  const playNext = () => {
-    if (liveStations.length === 0) return;
-
-    const currentIndex = liveStations.findIndex(
-      (station) => station.id === currentStation.id
-    );
-
-    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-    const next = liveStations[(safeIndex + 1) % liveStations.length];
-
-    selectStation(next);
-  };
-
-  const playPrev = () => {
-    if (liveStations.length === 0) return;
-
-    const currentIndex = liveStations.findIndex(
-      (station) => station.id === currentStation.id
-    );
-
-    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-    const prev =
-      liveStations[
-        (safeIndex - 1 + liveStations.length) % liveStations.length
-      ];
-
-    selectStation(prev);
-  };
-
-  const isFavorite = favorites.includes(currentStation.id);
+  const isFav = active ? favorites.includes(active.id) : false;
 
   return (
-    <main className="app">
-      <section className="sidebar">
-        <div className="brand">🌍 GlobeWave</div>
-        <p className="tagline">Premium world radio experience</p>
+    <div
+      data-theme="meridian"
+      className="frame"
+      style={{
+        width: "100%",
+        height: "100vh",
+        background: "var(--bg)",
+        backgroundImage:
+          "radial-gradient(circle at 50% 0%, oklch(96% 0.02 70) 0%, transparent 60%)",
+        position: "relative",
+        overflow: "hidden",
+        fontFamily: "var(--font-body)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <TopBar
+        route={route}
+        onRoute={setRoute}
+        country={country}
+        countries={countries}
+        onFavoritesOnly={setFavoritesOnly}
+      />
 
-        <input
-          className="search-input"
-          placeholder="Search country..."
-          value={countrySearch}
-          onChange={(e) => setCountrySearch(e.target.value)}
-        />
-
-        <select
-          className="search-input"
-          value={selectedCountry}
-          onChange={(e) => {
-            setSelectedCountry(e.target.value);
-            setQuery("");
+      {route === "settings" ? (
+        <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+          <SettingsPage
+            settings={settings}
+            onChange={updateSetting}
+            onBack={() => setRoute("browse")}
+          />
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "380px 1fr",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
           }}
         >
-          {filteredCountries.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.label}
-            </option>
-          ))}
-        </select>
-
-        <input
-          className="search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search station, city, country..."
-        />
-
-        <button
-          className={
-            showFavoritesOnly ? "filter-toggle active" : "filter-toggle"
-          }
-          onClick={() => setShowFavoritesOnly((prev) => !prev)}
-        >
-          ♥ Favorites Only
-        </button>
-
-        <button className="filter-toggle" onClick={loadLiveStations}>
-          {loading ? "Loading stations..." : "Load Country Stations"}
-        </button>
-
-        {error && <p className="error-text">{error}</p>}
-
-        <div className="station-list">
-          {filteredStations.map((station) => (
-            <div
-              key={station.id}
-              className={
-                currentStation.id === station.id
-                  ? "station-card active"
-                  : "station-card"
-              }
-            >
-              <button
-                className="station-main"
-                onClick={() => selectStation(station)}
-              >
-                <strong>{station.name}</strong>
-                <span>
-                  {station.city}, {station.country}
-                </span>
-              </button>
-
-              <button
-                className={
-                  favorites.includes(station.id)
-                    ? "favorite-button active"
-                    : "favorite-button"
-                }
-                onClick={() => toggleFavorite(station.id)}
-              >
-                ♥
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="stage">
-        <div className="glow" />
-
-        <GlobeScene
-          stations={liveStations}
-          currentStation={currentStation}
-          onSelect={selectStation}
-        />
-
-        <div className="now-playing">
-          <p className="eyebrow">Now Playing</p>
-
-          <button
-            className={isFavorite ? "big-favorite active" : "big-favorite"}
-            onClick={() => toggleFavorite(currentStation.id)}
-          >
-            ♥
-          </button>
-
-          <h1>{currentStation.name}</h1>
-
-          <p>
-            {currentStation.city}, {currentStation.country}
-          </p>
-
-          <p className="genre">{currentStation.genre}</p>
-
-          <div className="player-controls">
-            <button onClick={playPrev}>⏮</button>
-
-            <button
-              onClick={togglePlay}
-              className={playing ? "play-button pause" : "play-button"}
-            >
-              {playing ? "⏸ Pause" : "▶ Play"}
-            </button>
-
-            <button onClick={playNext}>⏭</button>
+          <div style={{ minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <Sidebar
+              query={query}
+              onQuery={setQuery}
+              country={country}
+              countries={countries}
+              onCountry={setCountry}
+              favoritesOnly={favoritesOnly}
+              onFavoritesOnly={setFavoritesOnly}
+              favorites={favorites}
+              filtered={filtered}
+              selectedId={selectedId}
+              activeId={active?.id}
+              playState={playState}
+              loading={loading}
+              loadError={loadError}
+              onSelect={select}
+              onPlay={play}
+              onToggleFav={toggleFav}
+            />
           </div>
+          <main style={{ position: "relative", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
+            <GlobePanel
+              stations={filtered}
+              activeId={active?.id}
+              selectedId={selectedId}
+              selectedStation={selectedStation}
+              activeStation={active}
+              playState={playState}
+              onSelectStation={select}
+              onPlay={play}
+            />
+          </main>
         </div>
+      )}
 
-        <div className="mini-player">
-          <div className="mini-info">
-            <strong>{currentStation.name}</strong>
-            <span>
-              {currentStation.city}, {currentStation.country}
-            </span>
+      <PlayerBar
+        active={active}
+        playState={playState}
+        elapsedSec={elapsedSec}
+        volume={volume}
+        muted={muted}
+        onVolume={setVolume}
+        onToggleMute={toggleMute}
+        onPause={playerPause}
+        onRetry={retry}
+        onPrev={() => stepStation(-1)}
+        onNext={() => stepStation(1)}
+        onExpand={() => setShowSheet(true)}
+      />
 
-            <small className={`stream-status ${status}`}>
-              {status === "loading" && "Connecting..."}
-              {status === "playing" && "Live now"}
-              {status === "paused" && "Paused"}
-              {status === "error" && "Stream unavailable"}
-              {status === "idle" && "Ready"}
-            </small>
-          </div>
-
-          <button className="mute-button" onClick={toggleMute}>
-            {muted || volume === 0 ? "🔇" : volume < 40 ? "🔉" : "🔊"}
-          </button>
-
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="volume-slider"
-          />
-
-          <div className="player-controls mini-controls">
-            <button onClick={playPrev}>⏮</button>
-
-            <button
-              onClick={togglePlay}
-              className={playing ? "mini-play pause" : "mini-play"}
-            >
-              {status === "loading" ? "…" : playing ? "❚❚" : "▶"}
-            </button>
-
-            <button onClick={playNext}>⏭</button>
-          </div>
-        </div>
-      </section>
-    </main>
+      <NowPlayingSheet
+        open={showSheet}
+        active={active}
+        playState={playState}
+        errorMsg={errorMsg}
+        elapsedSec={elapsedSec}
+        isFav={isFav}
+        onClose={() => setShowSheet(false)}
+        onToggleFav={() => active && toggleFav(active.id)}
+        onPause={playerPause}
+        onRetry={retry}
+        onStop={() => {
+          playerStop();
+          setShowSheet(false);
+        }}
+        onPrev={() => stepStation(-1)}
+        onNext={() => stepStation(1)}
+      />
+    </div>
   );
 }

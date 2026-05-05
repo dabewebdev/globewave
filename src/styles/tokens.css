@@ -1,0 +1,94 @@
+/* RadioMe — Meridian theme tokens.
+   Cartographic atlas: cream parchment, ink, terracotta accent. */
+
+:root {
+  /* motion */
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-slow: 480ms;
+  --ease-out: cubic-bezier(.2,.7,.3,1);
+  --ease-in-out: cubic-bezier(.5,.05,.3,.95);
+
+  /* spacing (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* radii */
+  --r-1: 4px;
+  --r-2: 8px;
+  --r-3: 12px;
+  --r-4: 16px;
+  --r-pill: 999px;
+}
+
+[data-theme="meridian"] {
+  --bg: #f3ede1;
+  --bg-elev: #ebe3d2;
+  --bg-card: #f8f3e8;
+  --bg-input: #fbf7ec;
+  --line: rgba(38,32,22,0.12);
+  --line-strong: rgba(38,32,22,0.28);
+  --hairline: rgba(38,32,22,0.06);
+
+  --fg: #1d1813;
+  --fg-muted: rgba(29,24,19,0.66);
+  --fg-dim: rgba(29,24,19,0.44);
+  --fg-faint: rgba(29,24,19,0.22);
+
+  --accent: oklch(56% 0.13 35);
+  --accent-strong: oklch(50% 0.14 35);
+  --accent-soft: oklch(56% 0.13 35 / 0.16);
+  --accent-faint: oklch(56% 0.13 35 / 0.06);
+  --accent-fg: #fbf7ec;
+
+  --signal: oklch(38% 0.06 230);
+  --signal-soft: oklch(38% 0.06 230 / 0.16);
+
+  --ok: oklch(48% 0.09 155);
+  --warn: oklch(58% 0.13 70);
+  --err: oklch(50% 0.14 25);
+
+  --font-display: "Source Serif 4", "GT Sectra", "Tiempos", Georgia, serif;
+  --font-body: "Inter", "Söhne", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --elev-1: 0 1px 0 rgba(255,255,255,.5) inset, 0 1px 2px rgba(38,32,22,.06);
+  --elev-2: 0 1px 0 rgba(255,255,255,.6) inset, 0 4px 14px rgba(38,32,22,.08);
+  --elev-3: 0 1px 0 rgba(255,255,255,.7) inset, 0 12px 36px rgba(38,32,22,.14);
+
+  --globe-base: #ebe3d2;
+  --globe-land: rgba(38,32,22,0.08);
+  --globe-grid: rgba(38,32,22,0.18);
+  --globe-atmos: oklch(56% 0.13 35 / 0.18);
+  --globe-station: oklch(50% 0.14 35);
+  --globe-station-glow: oklch(56% 0.13 35 / 0.4);
+}
+
+/* type scale */
+.t-display { font-family: var(--font-display); font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 400; }
+.t-h1      { font-family: var(--font-display); font-size: 32px; line-height: 1.1;  letter-spacing: -0.02em; font-weight: 400; }
+.t-h2      { font-family: var(--font-display); font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 500; }
+.t-h3      { font-family: var(--font-body);    font-size: 16px; line-height: 1.3;  letter-spacing: -0.005em;font-weight: 600; }
+.t-body    { font-family: var(--font-body);    font-size: 14px; line-height: 1.5;  font-weight: 400; }
+.t-small   { font-family: var(--font-body);    font-size: 12px; line-height: 1.45; font-weight: 400; }
+.t-mono    { font-family: var(--font-mono);    font-size: 11px; line-height: 1.4;  letter-spacing: 0.02em; }
+.t-eyebrow { font-family: var(--font-mono);    font-size: 10px; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; }
+.t-num     { font-variant-numeric: tabular-nums; }
+
+.frame { color: var(--fg); background: var(--bg); }
+.frame *, .frame *::before, .frame *::after { box-sizing: border-box; }
+.frame :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-1); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes radioPulse {
+  0%   { transform: scale(0.6); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}

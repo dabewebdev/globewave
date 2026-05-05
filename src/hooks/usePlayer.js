@@ -1,87 +1,201 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function usePlayer(initialStation) {
+// State machine: idle | connecting | buffering | playing | paused | blocked | error
+// Wired to real HTML5 audio events.
+
+const VOL_KEY = "radiome:volume";
+const MUTE_KEY = "radiome:muted";
+
+function pageIsHttps() {
+  if (typeof window === "undefined") return false;
+  return window.location.protocol === "https:";
+}
+
+function loadInt(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw == null) return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function loadBool(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw == null) return fallback;
+    return raw === "1" || raw === "true";
+  } catch {
+    return fallback;
+  }
+}
+
+export default function usePlayer() {
   const audioRef = useRef(null);
+  const generationRef = useRef(0);
 
-  const [currentStation, setCurrentStation] = useState(initialStation);
-  const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(70);
-  const [muted, setMuted] = useState(false);
-  const [status, setStatus] = useState("idle"); 
-  // idle | loading | playing | paused | error
+  const [active, setActive] = useState(null); // station object
+  const [playState, setPlayState] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [volume, setVolumeState] = useState(() => loadInt(VOL_KEY, 70));
+  const [muted, setMutedState] = useState(() => loadBool(MUTE_KEY, false));
+  const [elapsedSec, setElapsedSec] = useState(0);
 
+  // Init audio element once
   useEffect(() => {
-    audioRef.current = new Audio();
-    audioRef.current.volume = volume / 100;
-    audioRef.current.muted = muted;
+    const a = new Audio();
+    a.preload = "none";
+    a.crossOrigin = "anonymous";
+    audioRef.current = a;
+    a.volume = volume / 100;
+    a.muted = muted;
+
+    const onPlaying = () => setPlayState("playing");
+    const onWaiting = () => setPlayState((s) => (s === "playing" ? "buffering" : s));
+    const onPause = () => setPlayState((s) => (s === "playing" || s === "buffering" ? "paused" : s));
+    const onStalled = () => setPlayState((s) => (s === "playing" ? "buffering" : s));
+    const onError = () => {
+      setPlayState("error");
+      setErrorMsg("Stream error. The station may be down.");
+    };
+    const onEnded = () => setPlayState("idle");
+
+    a.addEventListener("playing", onPlaying);
+    a.addEventListener("waiting", onWaiting);
+    a.addEventListener("pause", onPause);
+    a.addEventListener("stalled", onStalled);
+    a.addEventListener("error", onError);
+    a.addEventListener("ended", onEnded);
 
     return () => {
-      audioRef.current.pause();
-      audioRef.current.src = "";
+      a.removeEventListener("playing", onPlaying);
+      a.removeEventListener("waiting", onWaiting);
+      a.removeEventListener("pause", onPause);
+      a.removeEventListener("stalled", onStalled);
+      a.removeEventListener("error", onError);
+      a.removeEventListener("ended", onEnded);
+      a.pause();
+      a.src = "";
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Volume / mute side effects + persistence
   useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.volume = volume / 100;
+    if (audioRef.current) audioRef.current.volume = volume / 100;
+    try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* ignore */ }
   }, [volume]);
-
   useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.muted = muted;
+    if (audioRef.current) audioRef.current.muted = muted;
+    try { localStorage.setItem(MUTE_KEY, muted ? "1" : "0"); } catch { /* ignore */ }
   }, [muted]);
 
-  const startStream = async (station) => {
-    if (!audioRef.current || !station?.streamUrl) return;
+  // Elapsed timer
+  useEffect(() => {
+    if (playState !== "playing") return;
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [playState]);
 
-    try {
-      setStatus("loading");
+  const play = useCallback((station) => {
+    if (!station || !audioRef.current) return;
+    const a = audioRef.current;
+    const gen = ++generationRef.current;
+    setActive(station);
+    setElapsedSec(0);
+    setErrorMsg("");
 
-      audioRef.current.pause();
-      audioRef.current.src = station.streamUrl;
-      audioRef.current.load();
-
-      await audioRef.current.play();
-
-      setPlaying(true);
-      setStatus("playing");
-    } catch {
-      setPlaying(false);
-      setStatus("error");
+    if (station.proto === "http" && pageIsHttps()) {
+      setPlayState("blocked");
+      setErrorMsg("Browser blocked this HTTP stream on a secure page.");
+      return;
     }
-  };
-
-  const selectStation = (station) => {
-    setCurrentStation(station);
-    startStream(station);
-  };
-
-  const togglePlay = async () => {
-    if (!audioRef.current || !currentStation?.streamUrl) return;
-
-    if (playing) {
-      audioRef.current.pause();
-      setPlaying(false);
-      setStatus("paused");
+    if (!station.streamUrl) {
+      setPlayState("error");
+      setErrorMsg("No stream URL provided.");
       return;
     }
 
-    await startStream(currentStation);
-  };
+    setPlayState("connecting");
+    try {
+      a.pause();
+      a.src = station.streamUrl;
+      a.load();
+    } catch (err) {
+      setPlayState("error");
+      setErrorMsg(err?.message || "Failed to prepare stream.");
+      return;
+    }
 
-  const toggleMute = () => {
-    setMuted((prev) => !prev);
-  };
+    a.play()
+      .then(() => {
+        if (gen !== generationRef.current) return; // stale request
+        // 'playing' event will land too; this handles the case where it doesn't fire fast.
+        setPlayState((s) => (s === "connecting" ? "buffering" : s));
+      })
+      .catch((err) => {
+        if (gen !== generationRef.current) return;
+        setPlayState("error");
+        setErrorMsg(err?.message || "Couldn't start stream.");
+      });
+  }, []);
+
+  const pause = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playState === "playing" || playState === "buffering" || playState === "connecting") {
+      a.pause();
+      setPlayState("paused");
+    } else if (playState === "paused" && active) {
+      play(active);
+    }
+  }, [playState, active, play]);
+
+  const stop = useCallback(() => {
+    const a = audioRef.current;
+    if (a) {
+      a.pause();
+      a.src = "";
+    }
+    generationRef.current++;
+    setActive(null);
+    setPlayState("idle");
+    setElapsedSec(0);
+    setErrorMsg("");
+  }, []);
+
+  const retry = useCallback(() => {
+    if (active) play(active);
+  }, [active, play]);
+
+  const setVolume = useCallback((v) => setVolumeState(Math.max(0, Math.min(100, v))), []);
+  const setMuted = useCallback((m) => setMutedState(!!m), []);
+  const toggleMute = useCallback(() => setMutedState((m) => !m), []);
 
   return {
-    currentStation,
-    selectStation,
-    playing,
-    togglePlay,
+    active,
+    playState,
+    errorMsg,
+    elapsedSec,
     volume,
-    setVolume,
     muted,
+    play,
+    pause,
+    stop,
+    retry,
+    setVolume,
+    setMuted,
     toggleMute,
-    status
   };
+}
+
+export function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h ? `${h}:${pad(mm)}:${pad(sec)}` : `${pad(mm)}:${pad(sec)}`;
 }
