@@ -1,0 +1,171 @@
+// Hand-picked stations whose stream URLs are stable and known. Each entry
+// is final — we don't go through radio-browser for these. Maintained
+// manually; if a URL rots, edit it here.
+
+const RP = { lat: 39.7596, lng: -121.6219 };  // Paradise, CA (Radio Paradise HQ)
+const PARIS = { lat: 48.8566, lng: 2.3522 };
+const COLOGNE = { lat: 50.9375, lng: 6.9603 };
+const BERLIN = { lat: 52.52, lng: 13.405 };
+
+function s(opts) {
+  return {
+    geoConfidence: "exact",
+    proto: opts.streamUrl.startsWith("https") ? "https" : "http",
+    listeners: null,
+    source: "curated",
+    state: "",
+    ...opts,
+  };
+}
+
+export const CURATED_STATIONS = [
+  // ── Radio Paradise · Paradise, California ──────────────────────────────
+  s({
+    id: "rp-main",
+    name: "Radio Paradise",
+    city: "Paradise",
+    country: "United States",
+    countryCode: "US",
+    tags: ["eclectic", "adult-album"],
+    codec: "AAC",
+    kbps: 128,
+    ...RP,
+    streamUrl: "https://stream.radioparadise.com/aac-128",
+  }),
+  s({
+    id: "rp-mellow",
+    name: "Radio Paradise · Mellow Mix",
+    city: "Paradise",
+    country: "United States",
+    countryCode: "US",
+    tags: ["mellow", "downtempo"],
+    codec: "AAC",
+    kbps: 128,
+    ...RP,
+    streamUrl: "https://stream.radioparadise.com/mellow-128",
+  }),
+  s({
+    id: "rp-rock",
+    name: "Radio Paradise · Rock Mix",
+    city: "Paradise",
+    country: "United States",
+    countryCode: "US",
+    tags: ["rock"],
+    codec: "AAC",
+    kbps: 128,
+    ...RP,
+    streamUrl: "https://stream.radioparadise.com/rock-128",
+  }),
+  s({
+    id: "rp-global",
+    name: "Radio Paradise · Global Mix",
+    city: "Paradise",
+    country: "United States",
+    countryCode: "US",
+    tags: ["world", "eclectic"],
+    codec: "AAC",
+    kbps: 128,
+    ...RP,
+    streamUrl: "https://stream.radioparadise.com/global-128",
+  }),
+
+  // ── Radio France · Paris ───────────────────────────────────────────────
+  s({
+    id: "fr-inter",
+    name: "France Inter",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    tags: ["talk", "music"],
+    codec: "MP3",
+    kbps: 128,
+    ...PARIS,
+    streamUrl: "https://icecast.radiofrance.fr/franceinter-midfi.mp3",
+  }),
+  s({
+    id: "fr-info",
+    name: "France Info",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    tags: ["news"],
+    codec: "MP3",
+    kbps: 128,
+    ...PARIS,
+    streamUrl: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3",
+  }),
+  s({
+    id: "fr-culture",
+    name: "France Culture",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    tags: ["culture", "talk"],
+    codec: "MP3",
+    kbps: 128,
+    ...PARIS,
+    streamUrl: "https://icecast.radiofrance.fr/franceculture-midfi.mp3",
+  }),
+  s({
+    id: "fr-musique",
+    name: "France Musique",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    tags: ["classical", "jazz"],
+    codec: "MP3",
+    kbps: 128,
+    ...PARIS,
+    streamUrl: "https://icecast.radiofrance.fr/francemusique-midfi.mp3",
+  }),
+  s({
+    id: "fr-fip",
+    name: "FIP",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    tags: ["eclectic", "jazz", "world"],
+    codec: "MP3",
+    kbps: 128,
+    ...PARIS,
+    streamUrl: "https://icecast.radiofrance.fr/fip-midfi.mp3",
+  }),
+
+  // ── Deutschlandfunk · Cologne / Berlin ────────────────────────────────
+  s({
+    id: "dlf-1",
+    name: "Deutschlandfunk",
+    city: "Cologne",
+    country: "Germany",
+    countryCode: "DE",
+    tags: ["news", "talk"],
+    codec: "MP3",
+    kbps: 128,
+    ...COLOGNE,
+    streamUrl: "https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3",
+  }),
+  s({
+    id: "dlf-kultur",
+    name: "Deutschlandfunk Kultur",
+    city: "Berlin",
+    country: "Germany",
+    countryCode: "DE",
+    tags: ["culture", "classical"],
+    codec: "MP3",
+    kbps: 128,
+    ...BERLIN,
+    streamUrl: "https://st02.sslstream.dlf.de/dlf/02/128/mp3/stream.mp3",
+  }),
+  s({
+    id: "dlf-nova",
+    name: "Deutschlandfunk Nova",
+    city: "Cologne",
+    country: "Germany",
+    countryCode: "DE",
+    tags: ["youth", "talk"],
+    codec: "MP3",
+    kbps: 128,
+    ...COLOGNE,
+    streamUrl: "https://st03.sslstream.dlf.de/dlf/03/128/mp3/stream.mp3",
+  }),
+];

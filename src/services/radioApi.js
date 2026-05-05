@@ -1,6 +1,8 @@
 import { capitalFor } from "../data/countryCapitals.js";
 import { usStateCapital } from "../data/usStateCapitals.js";
 import { SOMAFM } from "../data/somafm.js";
+import { CURATED_STATIONS } from "../data/curated.js";
+import { FEATURED_PATTERNS, WORLDWIDE_FEATURED_NAMES } from "../data/featured.js";
 
 const MIRRORS = [
   "https://de1.api.radio-browser.info/json",
@@ -115,13 +117,18 @@ async function tryMirrors(path, init) {
   throw lastErr || new Error("All mirrors failed");
 }
 
-function mergeWithSomaFM(stations, countryCode) {
-  // Surface SomaFM only on US and Worldwide queries; dedupe against
-  // radio-browser entries that point at the same stream URLs.
-  if (countryCode && countryCode !== "WW" && countryCode !== "US") return stations;
+// Pull together the always-on curated picks (SomaFM + the static curated list)
+// that are relevant for the current country selection, deduped against the
+// radio-browser results by stream URL.
+function mergeStaticCurated(stations, countryCode) {
   const existingUrls = new Set(stations.map((s) => s.streamUrl));
-  const additions = SOMAFM.filter((s) => !existingUrls.has(s.streamUrl));
-  // Put SomaFM near the top — they're high-quality curated picks.
+  const pool = [...SOMAFM, ...CURATED_STATIONS];
+  const additions = pool.filter((s) => {
+    if (existingUrls.has(s.streamUrl)) return false;
+    if (!countryCode || countryCode === "WW") return true;
+    return s.countryCode === countryCode;
+  });
+  // Curated picks render at the top of the list.
   return [...additions, ...stations];
 }
 
@@ -138,7 +145,7 @@ export async function getStationsByCountry(countryCode) {
   const list = data
     .filter((s) => s.url_resolved || s.url)
     .map((s) => normalize(s));
-  return mergeWithSomaFM(list, countryCode);
+  return mergeStaticCurated(list, countryCode);
 }
 
 export async function getTopStations() {
@@ -152,7 +159,90 @@ export async function getTopStations() {
   const list = data
     .filter((s) => s.url_resolved || s.url)
     .map((s) => normalize(s));
-  return mergeWithSomaFM(list, "WW");
+  return mergeStaticCurated(list, "WW");
+}
+
+// ── Featured-by-name lookups ─────────────────────────────────────────────
+// Resolves curated names → real radio-browser stations (with verified URLs)
+// at fetch time, so URL changes by the broadcasters are absorbed automatically.
+// Cached in localStorage 24h to keep page loads cheap.
+
+const FEATURED_TTL_MS = 24 * 60 * 60 * 1000;
+
+function featuredCacheKey(countryCode) {
+  return `globewave:featured:${countryCode || "WW"}`;
+}
+
+function readFeaturedCache(countryCode) {
+  try {
+    const raw = localStorage.getItem(featuredCacheKey(countryCode));
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > FEATURED_TTL_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeaturedCache(countryCode, data) {
+  try {
+    localStorage.setItem(
+      featuredCacheKey(countryCode),
+      JSON.stringify({ ts: Date.now(), data })
+    );
+  } catch {
+    /* quota — ignore */
+  }
+}
+
+async function lookupOnePattern(pattern) {
+  const params = new URLSearchParams({
+    name: pattern.name,
+    countrycode: pattern.code,
+    limit: "1",
+    hidebroken: "true",
+    order: "clickcount",
+    reverse: "true",
+  });
+  try {
+    const data = await tryMirrors(`/stations/search?${params}`);
+    if (!data || !data.length) return null;
+    const hit = data[0];
+    if (!hit.url_resolved && !hit.url) return null;
+    return { ...normalize(hit), source: "featured" };
+  } catch {
+    return null;
+  }
+}
+
+export async function getFeaturedForCountry(countryCode) {
+  const cached = readFeaturedCache(countryCode);
+  if (cached) return cached;
+
+  let patterns;
+  if (!countryCode || countryCode === "WW") {
+    patterns = FEATURED_PATTERNS.filter((p) => WORLDWIDE_FEATURED_NAMES.has(p.name));
+  } else {
+    patterns = FEATURED_PATTERNS.filter((p) => p.code === countryCode);
+  }
+  if (patterns.length === 0) {
+    writeFeaturedCache(countryCode, []);
+    return [];
+  }
+
+  const results = (await Promise.all(patterns.map(lookupOnePattern))).filter(Boolean);
+  writeFeaturedCache(countryCode, results);
+  return results;
+}
+
+// Helper for callers: merge a list of featured stations into an existing list,
+// deduped by stream URL. Featured picks render at the very top.
+export function mergeFeatured(stations, featured) {
+  if (!featured || featured.length === 0) return stations;
+  const existingUrls = new Set(stations.map((s) => s.streamUrl));
+  const additions = featured.filter((f) => !existingUrls.has(f.streamUrl));
+  return [...additions, ...stations];
 }
 
 export async function searchStations(query, countryCode) {

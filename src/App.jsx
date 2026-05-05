@@ -12,8 +12,10 @@ import {
   FALLBACK_COUNTRIES,
   geocodeMissingStations,
   getCountries,
+  getFeaturedForCountry,
   getStationsByCountry,
   getTopStations,
+  mergeFeatured,
 } from "./services/radioApi.js";
 import { generateArtwork } from "./utils/artwork.js";
 
@@ -158,6 +160,12 @@ export default function App() {
           setStations((prev) =>
             prev.map((s) => (s.id === updated.id ? updated : s))
           );
+        });
+        // Async-load featured public-broadcaster picks (cached 24h in
+        // localStorage). They render at the top of the list once they arrive.
+        getFeaturedForCountry(country).then((featured) => {
+          if (cancelled || featured.length === 0) return;
+          setStations((prev) => mergeFeatured(prev, featured));
         });
       })
       .catch(() => {
