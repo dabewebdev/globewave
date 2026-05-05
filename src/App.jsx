@@ -10,6 +10,7 @@ import usePlayer from "./hooks/usePlayer.js";
 import { useIsMobile, useIsTablet } from "./hooks/useMediaQuery.js";
 import {
   FALLBACK_COUNTRIES,
+  geocodeMissingStations,
   getCountries,
   getStationsByCountry,
   getTopStations,
@@ -136,6 +137,7 @@ export default function App() {
   // Load stations when country changes
   useEffect(() => {
     let cancelled = false;
+    let cancelGeocode = () => {};
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setLoadError("");
@@ -144,7 +146,19 @@ export default function App() {
       .then((list) => {
         if (cancelled) return;
         setStations(list);
-        if (list.length === 0) setLoadError("No stations available for this region.");
+        if (list.length === 0) {
+          setLoadError("No stations available for this region.");
+          return;
+        }
+        // Async-resolve geo for stations without exact coords; patches each
+        // station into the list as Nominatim returns. localStorage-cached
+        // so repeat country switches are instant.
+        cancelGeocode = geocodeMissingStations(list, (updated) => {
+          if (cancelled) return;
+          setStations((prev) =>
+            prev.map((s) => (s.id === updated.id ? updated : s))
+          );
+        });
       })
       .catch(() => {
         if (cancelled) return;
@@ -156,6 +170,7 @@ export default function App() {
       });
     return () => {
       cancelled = true;
+      cancelGeocode();
     };
   }, [country]);
 

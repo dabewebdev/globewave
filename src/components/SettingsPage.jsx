@@ -183,11 +183,29 @@ export default function SettingsPage({
               style={{ color: "var(--accent)", textDecoration: "none" }}
             >
               radio-browser.info
+            </a>{" "}
+            (community-edited) plus a curated set from{" "}
+            <a
+              href="https://somafm.com"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--accent)", textDecoration: "none" }}
+            >
+              SomaFM
             </a>
-            , a community-edited public database. If a station is wrong or down, try another — the catalog is large.
+            . Stations without coordinates are placed by city name via{" "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--accent)", textDecoration: "none" }}
+            >
+              OpenStreetMap Nominatim
+            </a>
+            .
           </div>
           <div className="t-mono" style={{ marginTop: 12, color: "var(--fg-dim)" }}>
-            v0.5.0
+            v0.6.0
           </div>
         </div>
 

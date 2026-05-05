@@ -1,3 +1,7 @@
+import { capitalFor } from "../data/countryCapitals.js";
+import { usStateCapital } from "../data/usStateCapitals.js";
+import { SOMAFM } from "../data/somafm.js";
+
 const MIRRORS = [
   "https://de1.api.radio-browser.info/json",
   "https://nl1.api.radio-browser.info/json",
@@ -23,38 +27,8 @@ export const FALLBACK_COUNTRIES = [
   { code: "MX", name: "Mexico" },
 ];
 
-const COUNTRY_CENTERS = {
-  US: { lat: 39.8, lng: -98.6 },
-  GB: { lat: 55.4, lng: -3.4 },
-  FR: { lat: 46.2, lng: 2.2 },
-  DE: { lat: 51.2, lng: 10.4 },
-  JP: { lat: 36.2, lng: 138.3 },
-  CA: { lat: 56.1, lng: -106.3 },
-  AU: { lat: -25.3, lng: 133.8 },
-  BR: { lat: -14.2, lng: -51.9 },
-  PH: { lat: 12.9, lng: 121.8 },
-  ES: { lat: 40.5, lng: -3.7 },
-  IT: { lat: 41.9, lng: 12.6 },
-  NL: { lat: 52.1, lng: 5.3 },
-  SE: { lat: 60.1, lng: 18.6 },
-  NO: { lat: 60.5, lng: 8.5 },
-  MX: { lat: 23.6, lng: -102.6 },
-};
-
-// Simple stable hash → [-1, 1) so missing-geo stations land deterministically
-// near the country center instead of jittering each refresh.
-function hash01(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = (h * 16777619) >>> 0;
-  }
-  return ((h >>> 0) / 0xffffffff) * 2 - 1;
-}
-
-function deterministicNear(seed, center, spread = 6) {
-  return center + hash01(seed) * spread;
-}
+// Fallback world center if a station has no usable country either.
+const NULL_ISLAND_FALLBACK = { lat: 12, lng: 0 };
 
 function detectProto(url) {
   if (!url) return "https";
@@ -70,32 +44,58 @@ function parseTags(raw) {
     .slice(0, 4);
 }
 
-function normalize(s, fallbackCode) {
-  const url = s.url_resolved || s.url;
-  const center = COUNTRY_CENTERS[fallbackCode] || { lat: 0, lng: 0 };
-  const seedLat = `${s.stationuuid}-lat`;
-  const seedLng = `${s.stationuuid}-lng`;
-  return {
-    id: s.stationuuid,
-    name: (s.name || "Unknown").trim(),
-    city: (s.state || s.country || "").trim() || "—",
-    country: (s.country || "").trim() || "Unknown",
-    countryCode: s.countrycode || fallbackCode || "",
-    tags: parseTags(s.tags),
-    codec: (s.codec || "MP3").toUpperCase(),
-    kbps: Number(s.bitrate) || 128,
-    lat:
-      s.geo_lat != null && s.geo_lat !== "" && Number.isFinite(Number(s.geo_lat))
-        ? Number(s.geo_lat)
-        : deterministicNear(seedLat, center.lat),
-    lng:
-      s.geo_long != null && s.geo_long !== "" && Number.isFinite(Number(s.geo_long))
-        ? Number(s.geo_long)
-        : deterministicNear(seedLng, center.lng),
+// Reject known-bogus geo: literal Null Island, NaN, way out of bounds.
+function geoIsValid(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+  // (0, 0) is Null Island — almost always means "I had no real value".
+  if (Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01) return false;
+  return true;
+}
+
+function pickFallbackGeo(station) {
+  // 1) US state capital if we have one
+  if (
+    (station.countryCode === "US" || station.country === "United States") &&
+    station.state
+  ) {
+    const s = usStateCapital(station.state);
+    if (s) return { lat: s.lat, lng: s.lng, geoConfidence: "state" };
+  }
+  // 2) Country capital
+  const cap = capitalFor(station.countryCode || "");
+  if (cap) return { lat: cap.lat, lng: cap.lng, geoConfidence: "capital" };
+  // 3) Last resort
+  return { ...NULL_ISLAND_FALLBACK, geoConfidence: "unknown" };
+}
+
+function normalize(rawStation) {
+  const url = rawStation.url_resolved || rawStation.url;
+  const lat = rawStation.geo_lat != null && rawStation.geo_lat !== "" ? Number(rawStation.geo_lat) : NaN;
+  const lng = rawStation.geo_long != null && rawStation.geo_long !== "" ? Number(rawStation.geo_long) : NaN;
+  const valid = geoIsValid(lat, lng);
+
+  const partial = {
+    id: rawStation.stationuuid,
+    name: (rawStation.name || "Unknown").trim(),
+    state: (rawStation.state || "").trim(),
+    city: (rawStation.state || rawStation.country || "").trim() || "—",
+    country: (rawStation.country || "").trim() || "Unknown",
+    countryCode: rawStation.countrycode || "",
+    tags: parseTags(rawStation.tags),
+    codec: (rawStation.codec || "MP3").toUpperCase(),
+    kbps: Number(rawStation.bitrate) || 128,
     proto: detectProto(url),
     streamUrl: url,
-    listeners: s.clickcount ?? null,
+    listeners: rawStation.clickcount ?? null,
+    source: "radio-browser",
   };
+
+  if (valid) {
+    return { ...partial, lat, lng, geoConfidence: "exact" };
+  }
+  const fb = pickFallbackGeo(partial);
+  return { ...partial, ...fb, needsGeocode: !!partial.state || !!partial.country };
 }
 
 async function tryMirrors(path, init) {
@@ -115,6 +115,16 @@ async function tryMirrors(path, init) {
   throw lastErr || new Error("All mirrors failed");
 }
 
+function mergeWithSomaFM(stations, countryCode) {
+  // Surface SomaFM only on US and Worldwide queries; dedupe against
+  // radio-browser entries that point at the same stream URLs.
+  if (countryCode && countryCode !== "WW" && countryCode !== "US") return stations;
+  const existingUrls = new Set(stations.map((s) => s.streamUrl));
+  const additions = SOMAFM.filter((s) => !existingUrls.has(s.streamUrl));
+  // Put SomaFM near the top — they're high-quality curated picks.
+  return [...additions, ...stations];
+}
+
 export async function getStationsByCountry(countryCode) {
   if (!countryCode || countryCode === "WW") return getTopStations();
   const params = new URLSearchParams({
@@ -125,9 +135,10 @@ export async function getStationsByCountry(countryCode) {
     reverse: "true",
   });
   const data = await tryMirrors(`/stations/search?${params}`);
-  return data
+  const list = data
     .filter((s) => s.url_resolved || s.url)
-    .map((s) => normalize(s, countryCode));
+    .map((s) => normalize(s));
+  return mergeWithSomaFM(list, countryCode);
 }
 
 export async function getTopStations() {
@@ -138,9 +149,10 @@ export async function getTopStations() {
     reverse: "true",
   });
   const data = await tryMirrors(`/stations/search?${params}`);
-  return data
+  const list = data
     .filter((s) => s.url_resolved || s.url)
-    .map((s) => normalize(s, s.countrycode || ""));
+    .map((s) => normalize(s));
+  return mergeWithSomaFM(list, "WW");
 }
 
 export async function searchStations(query, countryCode) {
@@ -155,7 +167,7 @@ export async function searchStations(query, countryCode) {
   const data = await tryMirrors(`/stations/search?${params}`);
   return data
     .filter((s) => s.url_resolved || s.url)
-    .map((s) => normalize(s, countryCode || s.countrycode || ""));
+    .map((s) => normalize(s));
 }
 
 export async function getCountries() {
@@ -169,4 +181,98 @@ export async function getCountries() {
     }))
     .sort((a, b) => b.count - a.count);
   return [{ code: "WW", name: "Worldwide", count: list.reduce((n, c) => n + c.count, 0) }, ...list];
+}
+
+// ── Geocoding ───────────────────────────────────────────────────────────────
+// Resolves stations whose only geo info is a city/state/country string by
+// asking the Vercel edge function which proxies Nominatim. CDN-cached on the
+// server side; localStorage-cached on the client for instant rehydration.
+
+const GEOCACHE_KEY = "globewave:geocache";
+
+function loadGeoCache() {
+  try {
+    const raw = localStorage.getItem(GEOCACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveGeoCache(cache) {
+  try {
+    localStorage.setItem(GEOCACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* quota — drop oldest entries next time */
+  }
+}
+
+function geocodeKey(station) {
+  const parts = [];
+  if (station.state) parts.push(station.state);
+  if (station.country) parts.push(station.country);
+  return parts.join(", ").toLowerCase();
+}
+
+let geocodeQueue = Promise.resolve();
+function enqueueGeocode(fn) {
+  geocodeQueue = geocodeQueue.then(fn).catch(() => {});
+  return geocodeQueue;
+}
+
+async function fetchGeocode(query, countryCode) {
+  const params = new URLSearchParams({ q: query });
+  if (countryCode) params.set("country", countryCode);
+  try {
+    const res = await fetch(`/api/geocode?${params}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.found ? { lat: json.lat, lng: json.lng } : null;
+  } catch {
+    return null;
+  }
+}
+
+// Async-resolves geo for stations that arrived without exact coords.
+// Calls onUpdate(updatedStation) for each successful resolution so the
+// caller can patch the rendering list incrementally.
+export function geocodeMissingStations(stations, onUpdate) {
+  const cache = loadGeoCache();
+  let cacheDirty = false;
+  let cancelled = false;
+
+  for (const s of stations) {
+    if (s.geoConfidence === "exact") continue;
+    if (!s.needsGeocode) continue;
+    const key = geocodeKey(s);
+    if (!key) continue;
+
+    if (cache[key]) {
+      const { lat, lng } = cache[key];
+      onUpdate({ ...s, lat, lng, geoConfidence: "geocoded" });
+      continue;
+    }
+
+    enqueueGeocode(async () => {
+      if (cancelled) return;
+      // Polite spacing: 1 req/sec to respect Nominatim policy.
+      // CDN cache on the proxy side returns instantly for repeats anyway.
+      await new Promise((r) => setTimeout(r, 1000));
+      if (cancelled) return;
+      const result = await fetchGeocode(key, s.countryCode);
+      if (!result) return;
+      cache[key] = result;
+      cacheDirty = true;
+      saveGeoCache(cache);
+      cacheDirty = false;
+      onUpdate({ ...s, lat: result.lat, lng: result.lng, geoConfidence: "geocoded" });
+    });
+  }
+
+  // Flush cache if any inline cache hits dirtied it (none currently).
+  if (cacheDirty) saveGeoCache(cache);
+
+  return () => {
+    cancelled = true;
+  };
 }
