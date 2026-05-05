@@ -47,7 +47,6 @@ export default function usePlayer() {
   useEffect(() => {
     const a = new Audio();
     a.preload = "none";
-    a.crossOrigin = "anonymous";
     audioRef.current = a;
     a.volume = volume / 100;
     a.muted = muted;
