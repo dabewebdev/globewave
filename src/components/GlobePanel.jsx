@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import InteractiveGlobe from "./InteractiveGlobe.jsx";
 import { Chip, Eyebrow, Spinner } from "./ui.jsx";
 import { I } from "./Icons.jsx";
+
+// three.js Earth is heavy — only load when GlobeWave theme is active.
+const GlobeWaveGlobe = lazy(() => import("./GlobeWaveGlobe.jsx"));
 
 export default function GlobePanel({
   stations,
@@ -13,6 +16,8 @@ export default function GlobePanel({
   onSelectStation,
   onPlay,
   compact = false,
+  theme = "meridian",
+  mode = "light",
 }) {
   const wrapRef = useRef(null);
   const globeRef = useRef(null);
@@ -34,7 +39,9 @@ export default function GlobePanel({
 
   useEffect(() => {
     function onKey(e) {
-      if (e.key === "Escape" && globeRef.current) globeRef.current.resetView();
+      if (e.key === "Escape" && globeRef.current?.resetView) {
+        globeRef.current.resetView();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -106,19 +113,34 @@ export default function GlobePanel({
           className="t-mono"
           style={{ position: "absolute", bottom: 16, right: 24, color: "var(--fg-faint)" }}
         >
-          DRAG TO ROTATE · CLICK CONTINENT TO ZOOM · ESC TO RESET
+          {theme === "globewave"
+            ? "DRAG TO ROTATE · CLICK A STATION TO FOCUS"
+            : "DRAG TO ROTATE · CLICK CONTINENT TO ZOOM · ESC TO RESET"}
         </div>
       )}
 
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-        <InteractiveGlobe
-          ref={globeRef}
-          size={size}
-          stations={globeStations}
-          activeId={activeId}
-          selectedId={selectedId}
-          onSelectStation={onSelectStation}
-        />
+        {theme === "globewave" ? (
+          <Suspense fallback={<Spinner size={28} color="var(--accent)" />}>
+            <GlobeWaveGlobe
+              size={size}
+              stations={globeStations}
+              activeId={activeId}
+              selectedId={selectedId}
+              onSelectStation={onSelectStation}
+              mode={mode}
+            />
+          </Suspense>
+        ) : (
+          <InteractiveGlobe
+            ref={globeRef}
+            size={size}
+            stations={globeStations}
+            activeId={activeId}
+            selectedId={selectedId}
+            onSelectStation={onSelectStation}
+          />
+        )}
       </div>
 
       {selectedStation && (
@@ -132,6 +154,7 @@ export default function GlobePanel({
                   bottom: 12,
                   background: "var(--bg-card)",
                   border: "1px solid var(--line-strong)",
+                  borderRadius: "var(--r-card)",
                   padding: 16,
                   boxShadow: "var(--elev-3)",
                 }
@@ -142,6 +165,7 @@ export default function GlobePanel({
                   width: 280,
                   background: "var(--bg-card)",
                   border: "1px solid var(--line-strong)",
+                  borderRadius: "var(--r-card)",
                   padding: 20,
                   boxShadow: "var(--elev-2)",
                 }
@@ -186,7 +210,7 @@ export default function GlobePanel({
                 activeId === selectedStation.id && playState === "playing"
                   ? "var(--accent)"
                   : "var(--accent-fg)",
-              borderRadius: 0,
+              borderRadius: "var(--r-control)",
               fontFamily: "var(--font-body)",
               fontSize: 12,
               fontWeight: 500,

@@ -20,12 +20,17 @@ const FAV_KEY = "radiome:favorites";
 const COUNTRY_KEY = "radiome:country";
 const SELECTED_KEY = "radiome:selected";
 const SETTINGS_KEY = "radiome:settings";
+const THEME_KEY = "radiome:theme";
+const MODE_KEY = "radiome:mode";
 
 const DEFAULT_SETTINGS = {
   reduceMotion: false,
   highContrast: false,
   autoNext: true,
 };
+
+const VALID_THEMES = ["meridian", "globewave"];
+const VALID_MODES = ["light", "dark"];
 
 function loadJSON(key, fallback) {
   try {
@@ -45,6 +50,24 @@ function saveJSON(key, value) {
   }
 }
 
+function loadOneOf(key, valid, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw && valid.includes(raw)) return raw;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
+function saveString(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function App() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -57,6 +80,10 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(() => loadJSON(SELECTED_KEY, null));
   const [showSheet, setShowSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState("list"); // 'list' | 'globe'
+  const [theme, setTheme] = useState(() => loadOneOf(THEME_KEY, VALID_THEMES, "meridian"));
+  const [mode, setMode] = useState(() =>
+    loadOneOf(MODE_KEY, VALID_MODES, theme === "globewave" ? "dark" : "light")
+  );
   const [settings, setSettings] = useState(() => ({
     ...DEFAULT_SETTINGS,
     ...loadJSON(SETTINGS_KEY, {}),
@@ -83,11 +110,13 @@ export default function App() {
     toggleMute,
   } = player;
 
-  // Persist favorites/country/selected/settings
+  // Persist favorites/country/selected/settings/theme/mode
   useEffect(() => saveJSON(FAV_KEY, favorites), [favorites]);
   useEffect(() => saveJSON(COUNTRY_KEY, country), [country]);
   useEffect(() => saveJSON(SELECTED_KEY, selectedId), [selectedId]);
   useEffect(() => saveJSON(SETTINGS_KEY, settings), [settings]);
+  useEffect(() => saveString(THEME_KEY, theme), [theme]);
+  useEffect(() => saveString(MODE_KEY, mode), [mode]);
 
   // Load countries once
   useEffect(() => {
@@ -209,7 +238,7 @@ export default function App() {
       navigator.mediaSession.metadata = null;
       return;
     }
-    const artwork = generateArtwork(active);
+    const artwork = generateArtwork(active, { theme, mode });
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: active.name,
       artist: `${active.city || ""} · ${active.country || ""}`.trim(),
@@ -233,7 +262,7 @@ export default function App() {
         playState === "playing" ? "playing" : playState === "paused" ? "paused" : "none";
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, playState]);
+  }, [active, playState, theme, mode]);
 
   const updateSetting = (key, value) =>
     setSettings((s) => ({ ...s, [key]: value }));
@@ -243,14 +272,14 @@ export default function App() {
 
   return (
     <div
-      data-theme="meridian"
+      data-theme={theme}
+      data-mode={mode}
       className="frame"
       style={{
         width: "100%",
         height: "100vh",
         background: "var(--bg)",
-        backgroundImage:
-          "radial-gradient(circle at 50% 0%, oklch(96% 0.02 70) 0%, transparent 60%)",
+        backgroundImage: "var(--bg-radial)",
         position: "relative",
         overflow: "hidden",
         fontFamily: "var(--font-body)",
@@ -273,6 +302,10 @@ export default function App() {
             settings={settings}
             onChange={updateSetting}
             onBack={() => setRoute("browse")}
+            theme={theme}
+            onTheme={setTheme}
+            mode={mode}
+            onMode={setMode}
           />
         </div>
       ) : isMobile ? (
@@ -314,6 +347,8 @@ export default function App() {
                 onSelectStation={select}
                 onPlay={play}
                 compact={isMobile}
+                theme={theme}
+                mode={mode}
               />
             )}
           </div>
@@ -359,6 +394,8 @@ export default function App() {
               playState={playState}
               onSelectStation={select}
               onPlay={play}
+              theme={theme}
+              mode={mode}
             />
           </main>
         </div>

@@ -1,15 +1,16 @@
-/* RadioMe — Meridian theme tokens.
-   Cartographic atlas: cream parchment, ink, terracotta accent. */
+/* RadioMe — design tokens.
+   Two themes (Meridian, GlobeWave) × two modes (Light, Dark).
+   Apply via [data-theme="..."] [data-mode="..."] on the root frame. */
 
 :root {
-  /* motion */
+  /* shared motion */
   --motion-fast: 120ms;
   --motion-base: 220ms;
   --motion-slow: 480ms;
   --ease-out: cubic-bezier(.2,.7,.3,1);
   --ease-in-out: cubic-bezier(.5,.05,.3,.95);
 
-  /* spacing (4px base) */
+  /* shared spacing scale (4px base) */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -20,16 +21,22 @@
   --sp-10: 40px;
   --sp-12: 48px;
   --sp-16: 64px;
-
-  /* radii */
-  --r-1: 4px;
-  --r-2: 8px;
-  --r-3: 12px;
-  --r-4: 16px;
-  --r-pill: 999px;
 }
 
+/* ─── MERIDIAN — cartographic plate, sharp corners, serif display ────── */
+
 [data-theme="meridian"] {
+  --r-control: 0;
+  --r-card: 0;
+  --r-pill: 0;
+
+  --font-display: "Source Serif 4", "GT Sectra", "Tiempos", Georgia, serif;
+  --font-body: "Inter", "Söhne", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --accent-fg: #fbf7ec;
+
+  /* light defaults */
   --bg: #f3ede1;
   --bg-elev: #ebe3d2;
   --bg-card: #f8f3e8;
@@ -47,7 +54,6 @@
   --accent-strong: oklch(50% 0.14 35);
   --accent-soft: oklch(56% 0.13 35 / 0.16);
   --accent-faint: oklch(56% 0.13 35 / 0.06);
-  --accent-fg: #fbf7ec;
 
   --signal: oklch(38% 0.06 230);
   --signal-soft: oklch(38% 0.06 230 / 0.16);
@@ -56,23 +62,117 @@
   --warn: oklch(58% 0.13 70);
   --err: oklch(50% 0.14 25);
 
-  --font-display: "Source Serif 4", "GT Sectra", "Tiempos", Georgia, serif;
-  --font-body: "Inter", "Söhne", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-
   --elev-1: 0 1px 0 rgba(255,255,255,.5) inset, 0 1px 2px rgba(38,32,22,.06);
   --elev-2: 0 1px 0 rgba(255,255,255,.6) inset, 0 4px 14px rgba(38,32,22,.08);
   --elev-3: 0 1px 0 rgba(255,255,255,.7) inset, 0 12px 36px rgba(38,32,22,.14);
 
-  --globe-base: #ebe3d2;
-  --globe-land: rgba(38,32,22,0.08);
-  --globe-grid: rgba(38,32,22,0.18);
-  --globe-atmos: oklch(56% 0.13 35 / 0.18);
-  --globe-station: oklch(50% 0.14 35);
-  --globe-station-glow: oklch(56% 0.13 35 / 0.4);
+  --bg-radial: radial-gradient(circle at 50% 0%, oklch(96% 0.02 70) 0%, transparent 60%);
 }
 
-/* type scale */
+[data-theme="meridian"][data-mode="dark"] {
+  --bg: #1c1812;
+  --bg-elev: #25201a;
+  --bg-card: #2a2419;
+  --bg-input: #1f1b14;
+  --line: rgba(243,237,225,0.10);
+  --line-strong: rgba(243,237,225,0.22);
+  --hairline: rgba(243,237,225,0.05);
+
+  --fg: #f3ede1;
+  --fg-muted: rgba(243,237,225,0.66);
+  --fg-dim: rgba(243,237,225,0.44);
+  --fg-faint: rgba(243,237,225,0.22);
+
+  --accent: oklch(70% 0.15 35);
+  --accent-strong: oklch(76% 0.16 35);
+  --accent-soft: oklch(70% 0.15 35 / 0.20);
+  --accent-faint: oklch(70% 0.15 35 / 0.08);
+
+  --elev-1: 0 1px 0 rgba(255,255,255,.04) inset, 0 1px 2px rgba(0,0,0,.4);
+  --elev-2: 0 1px 0 rgba(255,255,255,.05) inset, 0 6px 24px rgba(0,0,0,.5);
+  --elev-3: 0 1px 0 rgba(255,255,255,.06) inset, 0 14px 48px rgba(0,0,0,.6);
+
+  --bg-radial: radial-gradient(circle at 50% 0%, oklch(28% 0.04 60) 0%, transparent 60%);
+}
+
+/* ─── GLOBEWAVE — photoreal Earth, rounded, modern sans ─────────────── */
+
+[data-theme="globewave"] {
+  --r-control: 14px;
+  --r-card: 18px;
+  --r-pill: 999px;
+
+  --font-display: "Inter", "Inter Tight", system-ui, sans-serif;
+  --font-body: "Inter", "Söhne", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --accent-fg: #052e1f;
+
+  /* dark defaults — the original GlobeWave look */
+  --bg: #020617;
+  --bg-elev: rgba(2, 6, 23, 0.82);
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --hairline: rgba(255, 255, 255, 0.05);
+
+  --fg: #ffffff;
+  --fg-muted: rgba(255, 255, 255, 0.72);
+  --fg-dim: rgba(255, 255, 255, 0.55);
+  --fg-faint: rgba(255, 255, 255, 0.32);
+
+  --accent: #10b981;
+  --accent-strong: #34d399;
+  --accent-soft: rgba(16, 185, 129, 0.18);
+  --accent-faint: rgba(16, 185, 129, 0.08);
+
+  --signal: #6366f1;
+  --signal-soft: rgba(99, 102, 241, 0.18);
+
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --err: #f87171;
+
+  --elev-1: 0 1px 0 rgba(255,255,255,.05) inset, 0 1px 2px rgba(0,0,0,.4);
+  --elev-2: 0 1px 0 rgba(255,255,255,.06) inset, 0 12px 36px rgba(0,0,0,.5);
+  --elev-3: 0 1px 0 rgba(255,255,255,.08) inset, 0 24px 70px rgba(0,0,0,.55);
+
+  --bg-radial:
+    radial-gradient(circle at 70% 30%, rgba(16, 185, 129, 0.18), transparent 28%),
+    radial-gradient(circle at 40% 70%, rgba(37, 99, 235, 0.22), transparent 35%);
+}
+
+[data-theme="globewave"][data-mode="light"] {
+  --bg: #f1f5f9;
+  --bg-elev: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --line: rgba(2, 6, 23, 0.10);
+  --line-strong: rgba(2, 6, 23, 0.18);
+  --hairline: rgba(2, 6, 23, 0.04);
+
+  --fg: #020617;
+  --fg-muted: rgba(2, 6, 23, 0.66);
+  --fg-dim: rgba(2, 6, 23, 0.44);
+  --fg-faint: rgba(2, 6, 23, 0.22);
+
+  --accent: #0d9968;
+  --accent-strong: #047857;
+  --accent-soft: rgba(13, 153, 104, 0.16);
+  --accent-faint: rgba(13, 153, 104, 0.06);
+  --accent-fg: #ffffff;
+
+  --elev-1: 0 1px 0 rgba(255,255,255,.6) inset, 0 1px 2px rgba(2,6,23,.06);
+  --elev-2: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 20px rgba(2,6,23,.08);
+  --elev-3: 0 1px 0 rgba(255,255,255,.7) inset, 0 16px 50px rgba(2,6,23,.14);
+
+  --bg-radial:
+    radial-gradient(circle at 70% 30%, rgba(13, 153, 104, 0.10), transparent 35%),
+    radial-gradient(circle at 30% 80%, rgba(37, 99, 235, 0.10), transparent 40%);
+}
+
+/* ── Type scale ──────────────────────────────────────────────────────── */
 .t-display { font-family: var(--font-display); font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 400; }
 .t-h1      { font-family: var(--font-display); font-size: 32px; line-height: 1.1;  letter-spacing: -0.02em; font-weight: 400; }
 .t-h2      { font-family: var(--font-display); font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 500; }
@@ -85,7 +185,7 @@
 
 .frame { color: var(--fg); background: var(--bg); }
 .frame *, .frame *::before, .frame *::after { box-sizing: border-box; }
-.frame :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-1); }
+.frame :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-control); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes radioPulse {

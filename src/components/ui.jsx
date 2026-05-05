@@ -8,7 +8,7 @@ export const iconBtn = {
   color: "var(--fg)",
   width: 32,
   height: 32,
-  borderRadius: 0,
+  borderRadius: "var(--r-control)",
   display: "grid",
   placeItems: "center",
   cursor: "pointer",
@@ -35,7 +35,7 @@ export const Chip = ({ active, children, onClick }) => (
       background: active ? "var(--accent-soft)" : "transparent",
       color: active ? "var(--accent-strong)" : "var(--fg-muted)",
       padding: "4px 10px",
-      borderRadius: 0,
+      borderRadius: "var(--r-control)",
       cursor: "pointer",
       whiteSpace: "nowrap",
     }}

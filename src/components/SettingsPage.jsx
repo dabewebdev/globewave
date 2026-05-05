@@ -45,7 +45,67 @@ function Row({ label, valueText, on, onToggle }) {
   );
 }
 
-export default function SettingsPage({ settings, onChange, onBack }) {
+function SegmentRow({ label, value, options, onChange }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        padding: "16px 0",
+        borderBottom: "1px solid var(--line)",
+      }}
+    >
+      <div className="t-body" style={{ color: "var(--fg)" }}>{label}</div>
+      <div
+        style={{
+          display: "flex",
+          padding: 3,
+          background: "var(--bg-elev)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-control)",
+          gap: 2,
+        }}
+      >
+        {options.map(({ value: v, label: l }) => {
+          const active = v === value;
+          return (
+            <button
+              key={v}
+              onClick={() => onChange(v)}
+              aria-pressed={active}
+              style={{
+                padding: "6px 14px",
+                background: active ? "var(--bg-card)" : "transparent",
+                color: active ? "var(--fg)" : "var(--fg-muted)",
+                border: "none",
+                borderRadius: "var(--r-control)",
+                fontFamily: "var(--font-body)",
+                fontSize: 12,
+                fontWeight: active ? 600 : 400,
+                cursor: "pointer",
+                boxShadow: active ? "var(--elev-1)" : "none",
+              }}
+            >
+              {l}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsPage({
+  settings,
+  onChange,
+  onBack,
+  theme,
+  onTheme,
+  mode,
+  onMode,
+}) {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "auto", padding: 40 }}>
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -61,8 +121,31 @@ export default function SettingsPage({ settings, onChange, onBack }) {
         >
           Tune to taste.
         </div>
-        <div style={{ marginTop: 32 }}>
-          <Row label="Theme" valueText="Meridian (light)" />
+
+        <Eyebrow style={{ marginTop: 32 }}>APPEARANCE</Eyebrow>
+        <div style={{ marginTop: 12 }}>
+          <SegmentRow
+            label="Theme"
+            value={theme}
+            onChange={onTheme}
+            options={[
+              { value: "meridian", label: "Meridian" },
+              { value: "globewave", label: "GlobeWave" },
+            ]}
+          />
+          <SegmentRow
+            label="Mode"
+            value={mode}
+            onChange={onMode}
+            options={[
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
+        </div>
+
+        <Eyebrow style={{ marginTop: 32 }}>PLAYBACK</Eyebrow>
+        <div style={{ marginTop: 12 }}>
           <Row
             label="Reduce motion on globe"
             on={settings.reduceMotion}
@@ -80,6 +163,7 @@ export default function SettingsPage({ settings, onChange, onBack }) {
           />
           <Row label="Stream quality" valueText="Highest available" />
         </div>
+
         <Eyebrow style={{ marginTop: 36 }}>ABOUT</Eyebrow>
         <div
           style={{
@@ -87,6 +171,7 @@ export default function SettingsPage({ settings, onChange, onBack }) {
             padding: 18,
             background: "var(--bg-card)",
             border: "1px solid var(--line)",
+            borderRadius: "var(--r-card)",
           }}
         >
           <div className="t-body" style={{ color: "var(--fg-muted)" }}>
@@ -102,9 +187,10 @@ export default function SettingsPage({ settings, onChange, onBack }) {
             , a community-edited public database. If a station is wrong or down, try another — the catalog is large.
           </div>
           <div className="t-mono" style={{ marginTop: 12, color: "var(--fg-dim)" }}>
-            v0.4.0
+            v0.5.0
           </div>
         </div>
+
         <button
           onClick={onBack}
           style={{
@@ -114,6 +200,7 @@ export default function SettingsPage({ settings, onChange, onBack }) {
             background: "var(--accent)",
             color: "var(--accent-fg)",
             border: "none",
+            borderRadius: "var(--r-control)",
             fontFamily: "var(--font-body)",
             fontSize: 13,
             cursor: "pointer",

@@ -54,6 +54,7 @@ export default function NowPlayingSheet({
                 maxWidth: "100%",
                 background: "var(--bg)",
                 border: "1px solid var(--line-strong)",
+                borderRadius: "var(--r-card)",
                 boxShadow: "var(--elev-3)",
                 padding: 32,
                 position: "relative",

@@ -10,7 +10,7 @@ export default function MobileTabs({ value, onChange }) {
         style={{
           flex: 1,
           height: 40,
-          borderRadius: 0,
+          borderRadius: "var(--r-control)",
           border: "none",
           background: active ? "var(--bg-card)" : "transparent",
           color: active ? "var(--fg)" : "var(--fg-muted)",
