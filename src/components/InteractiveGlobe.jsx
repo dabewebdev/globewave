@@ -105,7 +105,15 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
     };
   }, [selectedId, stations]);
 
-  // Pointer handlers
+  // Pointer handlers.
+  // Pointer capture is needed so the drag keeps tracking when the cursor leaves
+  // the SVG. But capture also retargets the synthesized 'click' event in some
+  // browsers, which silently breaks `onClick` on continent paths and station
+  // groups. So we don't rely on click events: in pointerup, if no meaningful
+  // drag happened, we look up the element under the pointer and dispatch the
+  // intended action ourselves.
+  const DRAG_THRESHOLD = 8;
+
   const onPointerDown = (e) => {
     draggingRef.current = true;
     dragMovedRef.current = false;
@@ -116,13 +124,20 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
   };
   const onPointerMove = (e) => {
     if (!draggingRef.current) return;
+    const totalDx = e.clientX - startPtRef.current.x;
+    const totalDy = e.clientY - startPtRef.current.y;
+    const td = Math.hypot(totalDx, totalDy);
+    // Below threshold, suppress rotation entirely so a click with normal
+    // jitter doesn't rotate the globe a tiny amount AND get classified as drag.
+    if (td <= DRAG_THRESHOLD) return;
+    if (!dragMovedRef.current) {
+      dragMovedRef.current = true;
+      lastPtRef.current = { x: e.clientX, y: e.clientY };
+      return;
+    }
     const dx = e.clientX - lastPtRef.current.x;
     const dy = e.clientY - lastPtRef.current.y;
     lastPtRef.current = { x: e.clientX, y: e.clientY };
-    if (startPtRef.current) {
-      const td = Math.hypot(e.clientX - startPtRef.current.x, e.clientY - startPtRef.current.y);
-      if (td > 4) dragMovedRef.current = true;
-    }
     const sens = 0.4 / zoomRef.current;
     lamRef.current += dx * sens;
     phiRef.current += dy * sens;
@@ -131,6 +146,21 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
   const onPointerUp = (e) => {
     draggingRef.current = false;
     e.currentTarget.releasePointerCapture?.(e.pointerId);
+    if (dragMovedRef.current) return;
+    // Tap with no drag — find what was under the pointer and act on it.
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el) return;
+    const stationEl = el.closest("[data-station-id]");
+    if (stationEl) {
+      handleStationClick(stationEl.getAttribute("data-station-id"));
+      return;
+    }
+    const countryEl = el.closest("[data-country-code]");
+    if (countryEl) {
+      const code = countryEl.getAttribute("data-country-code");
+      const country = WORLD.find((c) => c.code === code);
+      if (country) handleContinentClick(country);
+    }
   };
 
   // Projection state
@@ -244,7 +274,7 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
     targetRef.current = {
       lam: -c.lng,
       phi: clamp(c.lat, -55, 55),
-      zoom: 1.45,
+      zoom: 1.85,
     };
   };
 
@@ -284,7 +314,7 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
           </radialGradient>
           <radialGradient id="globe-shade" cx="50%" cy="50%" r="50%">
             <stop offset="60%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(38,32,22,0.18)" />
+            <stop offset="100%" stopColor="var(--globe-shade)" />
           </radialGradient>
           <clipPath id="globe-clip">
             <circle cx={r} cy={r} r={baseInner} />
@@ -314,8 +344,9 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
                     <path
                       key={`${country.code}-${i}`}
                       d={d}
-                      fill={isHover ? "var(--accent-soft)" : "rgba(38,32,22,0.10)"}
-                      stroke={isHover ? "var(--accent-strong)" : "rgba(38,32,22,0.55)"}
+                      data-country-code={country.code}
+                      fill={isHover ? "var(--accent-soft)" : "var(--globe-land)"}
+                      stroke={isHover ? "var(--accent-strong)" : "var(--globe-land-stroke)"}
                       strokeWidth={isHover ? 1.2 : 0.7}
                       onMouseEnter={(e) => {
                         const rect = wrapRef.current.getBoundingClientRect();
@@ -351,6 +382,7 @@ const InteractiveGlobe = forwardRef(function InteractiveGlobe(
               return (
                 <g
                   key={s.id}
+                  data-station-id={s.id}
                   opacity={opacity}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => {

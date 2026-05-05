@@ -67,6 +67,11 @@
   --elev-3: 0 1px 0 rgba(255,255,255,.7) inset, 0 12px 36px rgba(38,32,22,.14);
 
   --bg-radial: radial-gradient(circle at 50% 0%, oklch(96% 0.02 70) 0%, transparent 60%);
+
+  /* SVG globe palette */
+  --globe-land: rgba(38,32,22,0.10);
+  --globe-land-stroke: rgba(38,32,22,0.55);
+  --globe-shade: rgba(38,32,22,0.18);
 }
 
 [data-theme="meridian"][data-mode="dark"] {
@@ -93,6 +98,11 @@
   --elev-3: 0 1px 0 rgba(255,255,255,.06) inset, 0 14px 48px rgba(0,0,0,.6);
 
   --bg-radial: radial-gradient(circle at 50% 0%, oklch(28% 0.04 60) 0%, transparent 60%);
+
+  /* SVG globe palette — light continents on dark sphere */
+  --globe-land: rgba(243,237,225,0.14);
+  --globe-land-stroke: rgba(243,237,225,0.55);
+  --globe-shade: rgba(0,0,0,0.45);
 }
 
 /* ─── GLOBEWAVE — photoreal Earth, rounded, modern sans ─────────────── */

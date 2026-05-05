@@ -28,13 +28,14 @@ export default function GlobeWaveGlobe({
     }));
   }, [stations, activeId, selectedId]);
 
-  // Animate POV to selected station
+  // Animate POV to selected station — closer altitude so the click feels
+  // like a zoom, matching Meridian's continent-zoom behaviour.
   useEffect(() => {
     if (!globeRef.current || !selectedId) return;
     const s = stations.find((x) => x.id === selectedId);
     if (!s) return;
     globeRef.current.pointOfView(
-      { lat: s.lat, lng: s.lng, altitude: 1.6 },
+      { lat: s.lat, lng: s.lng, altitude: 1.1 },
       1200
     );
   }, [selectedId, stations]);
