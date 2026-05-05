@@ -16,12 +16,13 @@ export default function PlayerBar({
   onPrev,
   onNext,
   onExpand,
+  compact = false,
 }) {
   if (!active) {
     return (
       <footer
         style={{
-          height: 76,
+          height: compact ? 64 : 76,
           flexShrink: 0,
           borderTop: "1px solid var(--line-strong)",
           background: "var(--bg-elev)",
@@ -29,12 +30,20 @@ export default function PlayerBar({
           alignItems: "center",
           justifyContent: "center",
           gap: 12,
-          padding: "0 24px",
+          padding: compact ? "0 14px" : "0 24px",
         }}
       >
         <I.Headphones size={16} style={{ color: "var(--fg-dim)" }} />
-        <div className="t-mono" style={{ color: "var(--fg-dim)" }}>
-          NOTHING TUNED IN · PRESS PLAY ON ANY STATION
+        <div
+          className="t-mono"
+          style={{
+            color: "var(--fg-dim)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {compact ? "PRESS PLAY ON ANY STATION" : "NOTHING TUNED IN · PRESS PLAY ON ANY STATION"}
         </div>
       </footer>
     );
@@ -58,6 +67,74 @@ export default function PlayerBar({
   const isError = playState === "blocked" || playState === "error";
 
   const volIcon = muted || volume === 0 ? <I.VolumeMute size={14} /> : <I.Volume size={14} />;
+
+  if (compact) {
+    return (
+      <footer
+        style={{
+          height: 64,
+          flexShrink: 0,
+          borderTop: "1px solid var(--line-strong)",
+          background: "var(--bg-elev)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "0 12px",
+        }}
+      >
+        <div
+          onClick={onExpand}
+          style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", minWidth: 0, flex: 1 }}
+        >
+          <Artwork s={active} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 15,
+                color: "var(--fg)",
+                letterSpacing: "-.01em",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {active.name}
+            </div>
+            <div
+              className="t-mono"
+              style={{
+                color: labelColor,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontSize: 10,
+              }}
+            >
+              {label}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => (isError ? onRetry() : onPause())}
+          style={{
+            ...iconBtn,
+            width: 44,
+            height: 44,
+            background: isError ? "var(--err)" : "var(--accent)",
+            color: "var(--accent-fg)",
+            borderColor: isError ? "var(--err)" : "var(--accent)",
+          }}
+          aria-label={isError ? "Retry" : isPlaying ? "Pause" : "Play"}
+        >
+          {isLoading ? <Spinner /> : isError ? <I.Refresh size={16} /> : isPlaying ? <I.Pause size={16} /> : <I.Play size={14} />}
+        </button>
+        <button style={iconBtn} onClick={onExpand} aria-label="Expand player">
+          <I.ChevronUp size={14} />
+        </button>
+      </footer>
+    );
+  }
 
   return (
     <footer

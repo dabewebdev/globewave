@@ -21,6 +21,7 @@ export default function Sidebar({
   onSelect,
   onPlay,
   onToggleFav,
+  compact = false,
 }) {
   const localCount = filtered.length;
   const headlineCountry =
@@ -28,10 +29,12 @@ export default function Sidebar({
       ? "Worldwide"
       : countries.find((c) => c.code === country)?.name || country;
 
+  const padX = compact ? 16 : 22;
+
   return (
     <aside
       style={{
-        borderRight: "1px solid var(--line)",
+        borderRight: compact ? "none" : "1px solid var(--line)",
         display: "flex",
         flexDirection: "column",
         height: "100%",
@@ -39,12 +42,17 @@ export default function Sidebar({
         flex: 1,
       }}
     >
-      <div style={{ padding: "20px 22px 18px", borderBottom: "1px solid var(--line)" }}>
+      <div
+        style={{
+          padding: compact ? `14px ${padX}px 12px` : "20px 22px 18px",
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
         <Eyebrow>INDEX</Eyebrow>
         <div
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 28,
+            fontSize: compact ? 24 : 28,
             color: "var(--fg)",
             letterSpacing: "-.02em",
             marginTop: 6,
@@ -60,7 +68,14 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div style={{ padding: "14px 22px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        style={{
+          padding: compact ? `12px ${padX}px 10px` : "14px 22px 12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
         <div style={{ position: "relative" }}>
           <I.Search
             size={14}

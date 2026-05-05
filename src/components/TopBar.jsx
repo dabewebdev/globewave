@@ -1,7 +1,14 @@
 import { I } from "./Icons.jsx";
 import { Logomark, iconBtn } from "./ui.jsx";
 
-export default function TopBar({ route, onRoute, country, countries, onFavoritesOnly }) {
+export default function TopBar({
+  route,
+  onRoute,
+  country,
+  countries,
+  onFavoritesOnly,
+  compact = false,
+}) {
   const countryLabel =
     country === "WW"
       ? "WORLDWIDE"
@@ -20,53 +27,67 @@ export default function TopBar({ route, onRoute, country, countries, onFavorites
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 24px",
+        padding: compact ? "0 16px" : "0 24px",
         borderBottom: "1px solid var(--line)",
         flexShrink: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: compact ? 12 : 18,
+          minWidth: 0,
+        }}
+      >
         <Logomark />
-        <div className="t-mono" style={{ color: "var(--fg-dim)" }}>
-          PLATE 04 · {countryLabel}
-        </div>
+        {!compact && (
+          <div className="t-mono" style={{ color: "var(--fg-dim)" }}>
+            PLATE 04 · {countryLabel}
+          </div>
+        )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <nav style={{ display: "flex", gap: 4 }}>
-          {items.map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => {
-                if (k === "favorites") {
-                  onFavoritesOnly(true);
-                  onRoute("browse");
-                } else {
-                  onRoute(k);
-                }
-              }}
-              style={{
-                height: 32,
-                padding: "0 12px",
-                background: "transparent",
-                border: "1px solid transparent",
-                color: route === k ? "var(--fg)" : "var(--fg-muted)",
-                fontFamily: "var(--font-body)",
-                fontSize: 13,
-                cursor: "pointer",
-                borderBottom: route === k ? "1px solid var(--accent)" : "1px solid transparent",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div style={{ width: 1, height: 18, background: "var(--line-strong)" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 16 }}>
+        {!compact && (
+          <>
+            <nav style={{ display: "flex", gap: 4 }}>
+              {items.map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    if (k === "favorites") {
+                      onFavoritesOnly(true);
+                      onRoute("browse");
+                    } else {
+                      onRoute(k);
+                    }
+                  }}
+                  style={{
+                    height: 32,
+                    padding: "0 12px",
+                    background: "transparent",
+                    border: "1px solid transparent",
+                    color: route === k ? "var(--fg)" : "var(--fg-muted)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    cursor: "pointer",
+                    borderBottom:
+                      route === k ? "1px solid var(--accent)" : "1px solid transparent",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <div style={{ width: 1, height: 18, background: "var(--line-strong)" }} />
+          </>
+        )}
         <button
           style={iconBtn}
-          onClick={() => onRoute("settings")}
-          aria-label="Settings"
+          onClick={() => onRoute(route === "settings" ? "browse" : "settings")}
+          aria-label={route === "settings" ? "Close settings" : "Settings"}
         >
-          <I.Settings size={14} />
+          {route === "settings" ? <I.Close size={14} /> : <I.Settings size={14} />}
         </button>
       </div>
     </header>

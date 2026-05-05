@@ -5,13 +5,16 @@ import GlobePanel from "./components/GlobePanel.jsx";
 import PlayerBar from "./components/PlayerBar.jsx";
 import NowPlayingSheet from "./components/NowPlayingSheet.jsx";
 import SettingsPage from "./components/SettingsPage.jsx";
+import MobileTabs from "./components/MobileTabs.jsx";
 import usePlayer from "./hooks/usePlayer.js";
+import { useIsMobile, useIsTablet } from "./hooks/useMediaQuery.js";
 import {
   FALLBACK_COUNTRIES,
   getCountries,
   getStationsByCountry,
   getTopStations,
 } from "./services/radioApi.js";
+import { generateArtwork } from "./utils/artwork.js";
 
 const FAV_KEY = "radiome:favorites";
 const COUNTRY_KEY = "radiome:country";
@@ -43,6 +46,9 @@ function saveJSON(key, value) {
 }
 
 export default function App() {
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+
   const [route, setRoute] = useState("browse");
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState(() => loadJSON(COUNTRY_KEY, "WW"));
@@ -50,6 +56,7 @@ export default function App() {
   const [favorites, setFavorites] = useState(() => loadJSON(FAV_KEY, []));
   const [selectedId, setSelectedId] = useState(() => loadJSON(SELECTED_KEY, null));
   const [showSheet, setShowSheet] = useState(false);
+  const [mobileTab, setMobileTab] = useState("list"); // 'list' | 'globe'
   const [settings, setSettings] = useState(() => ({
     ...DEFAULT_SETTINGS,
     ...loadJSON(SETTINGS_KEY, {}),
@@ -97,8 +104,7 @@ export default function App() {
     };
   }, []);
 
-  // Load stations when country changes (or on mount). Search is local-only;
-  // a separate "Search Worldwide" button widens scope.
+  // Load stations when country changes
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -124,7 +130,6 @@ export default function App() {
     };
   }, [country]);
 
-  // Local + tag filter
   const filtered = useMemo(() => {
     let arr = stations;
     if (favoritesOnly) arr = arr.filter((s) => favorites.includes(s.id));
@@ -143,9 +148,7 @@ export default function App() {
     [stations, selectedId]
   );
 
-  const select = (id) => {
-    setSelectedId(id);
-  };
+  const select = (id) => setSelectedId(id);
 
   const play = (id) => {
     const s = stations.find((x) => x.id === id);
@@ -171,7 +174,7 @@ export default function App() {
     play(next.id);
   };
 
-  // Auto-play next on error if setting enabled
+  // Auto-play next on error
   useEffect(() => {
     if (!settings.autoNext) return;
     if (playState !== "error") return;
@@ -199,17 +202,19 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, selectedStation]);
 
-  // MediaSession (lock-screen / Bluetooth controls on mobile)
+  // MediaSession metadata + procedural artwork for lock screen / Bluetooth
   useEffect(() => {
     if (!("mediaSession" in navigator)) return;
     if (!active) {
       navigator.mediaSession.metadata = null;
       return;
     }
+    const artwork = generateArtwork(active);
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: active.name,
       artist: `${active.city || ""} · ${active.country || ""}`.trim(),
       album: "RadioMe",
+      artwork,
     });
     const handlers = [
       ["play", () => active && playerPlay(active)],
@@ -234,6 +239,7 @@ export default function App() {
     setSettings((s) => ({ ...s, [key]: value }));
 
   const isFav = active ? favorites.includes(active.id) : false;
+  const sidebarWidth = isTablet ? 320 : 380;
 
   return (
     <div
@@ -258,6 +264,7 @@ export default function App() {
         country={country}
         countries={countries}
         onFavoritesOnly={setFavoritesOnly}
+        compact={isMobile}
       />
 
       {route === "settings" ? (
@@ -268,11 +275,54 @@ export default function App() {
             onBack={() => setRoute("browse")}
           />
         </div>
+      ) : isMobile ? (
+        <>
+          <MobileTabs value={mobileTab} onChange={setMobileTab} />
+          <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+            {mobileTab === "list" ? (
+              <Sidebar
+                query={query}
+                onQuery={setQuery}
+                country={country}
+                countries={countries}
+                onCountry={setCountry}
+                favoritesOnly={favoritesOnly}
+                onFavoritesOnly={setFavoritesOnly}
+                favorites={favorites}
+                filtered={filtered}
+                selectedId={selectedId}
+                activeId={active?.id}
+                playState={playState}
+                loading={loading}
+                loadError={loadError}
+                onSelect={(id) => {
+                  select(id);
+                  setMobileTab("globe");
+                }}
+                onPlay={play}
+                onToggleFav={toggleFav}
+                compact={isMobile}
+              />
+            ) : (
+              <GlobePanel
+                stations={filtered}
+                activeId={active?.id}
+                selectedId={selectedId}
+                selectedStation={selectedStation}
+                activeStation={active}
+                playState={playState}
+                onSelectStation={select}
+                onPlay={play}
+                compact={isMobile}
+              />
+            )}
+          </div>
+        </>
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "380px 1fr",
+            gridTemplateColumns: `${sidebarWidth}px 1fr`,
             flex: 1,
             minHeight: 0,
             overflow: "hidden",
@@ -327,6 +377,7 @@ export default function App() {
         onPrev={() => stepStation(-1)}
         onNext={() => stepStation(1)}
         onExpand={() => setShowSheet(true)}
+        compact={isMobile}
       />
 
       <NowPlayingSheet
@@ -346,6 +397,7 @@ export default function App() {
         }}
         onPrev={() => stepStation(-1)}
         onNext={() => stepStation(1)}
+        compact={isMobile}
       />
     </div>
   );

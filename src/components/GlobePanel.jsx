@@ -12,6 +12,7 @@ export default function GlobePanel({
   playState,
   onSelectStation,
   onPlay,
+  compact = false,
 }) {
   const wrapRef = useRef(null);
   const globeRef = useRef(null);
@@ -21,12 +22,15 @@ export default function GlobePanel({
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      const s = Math.max(360, Math.min(width - 80, height - 200));
+      const minSide = compact ? 260 : 360;
+      const padX = compact ? 32 : 80;
+      const padY = compact ? 280 : 200;
+      const s = Math.max(minSide, Math.min(width - padX, height - padY));
       setSize(s);
     });
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
-  }, []);
+  }, [compact]);
 
   useEffect(() => {
     function onKey(e) {
@@ -73,7 +77,12 @@ export default function GlobePanel({
       {selectedStation && (
         <div
           className="t-mono"
-          style={{ position: "absolute", top: 16, left: 24, color: "var(--fg-dim)" }}
+          style={{
+            position: "absolute",
+            top: compact ? 10 : 16,
+            left: compact ? 14 : 24,
+            color: "var(--fg-dim)",
+          }}
         >
           {selectedStation.lat.toFixed(2)}° {selectedStation.lat >= 0 ? "N" : "S"} ·{" "}
           {selectedStation.lng.toFixed(2)}° {selectedStation.lng >= 0 ? "E" : "W"}
@@ -84,20 +93,22 @@ export default function GlobePanel({
         className="t-mono"
         style={{
           position: "absolute",
-          top: 16,
-          right: 24,
+          top: compact ? 10 : 16,
+          right: compact ? 14 : 24,
           color: activeStation ? "var(--accent)" : "var(--fg-faint)",
         }}
       >
         {activeStation ? "◆ ON AIR" : "◇ NOT TUNED"}
       </div>
 
-      <div
-        className="t-mono"
-        style={{ position: "absolute", bottom: 16, right: 24, color: "var(--fg-faint)" }}
-      >
-        DRAG TO ROTATE · CLICK CONTINENT TO ZOOM · ESC TO RESET
-      </div>
+      {!compact && (
+        <div
+          className="t-mono"
+          style={{ position: "absolute", bottom: 16, right: 24, color: "var(--fg-faint)" }}
+        >
+          DRAG TO ROTATE · CLICK CONTINENT TO ZOOM · ESC TO RESET
+        </div>
+      )}
 
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
         <InteractiveGlobe
@@ -112,16 +123,29 @@ export default function GlobePanel({
 
       {selectedStation && (
         <div
-          style={{
-            position: "absolute",
-            right: 32,
-            bottom: 48,
-            width: 280,
-            background: "var(--bg-card)",
-            border: "1px solid var(--line-strong)",
-            padding: 20,
-            boxShadow: "var(--elev-2)",
-          }}
+          style={
+            compact
+              ? {
+                  position: "absolute",
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--line-strong)",
+                  padding: 16,
+                  boxShadow: "var(--elev-3)",
+                }
+              : {
+                  position: "absolute",
+                  right: 32,
+                  bottom: 48,
+                  width: 280,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--line-strong)",
+                  padding: 20,
+                  boxShadow: "var(--elev-2)",
+                }
+          }
         >
           <Eyebrow>PLATE CAPTION</Eyebrow>
           <div
