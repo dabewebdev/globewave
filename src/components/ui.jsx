@@ -74,7 +74,7 @@ export const Logomark = () => (
         letterSpacing: ".01em",
       }}
     >
-      RadioMe
+      GlobeWave
     </span>
   </div>
 );

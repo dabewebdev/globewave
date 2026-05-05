@@ -242,7 +242,7 @@ export default function App() {
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: active.name,
       artist: `${active.city || ""} · ${active.country || ""}`.trim(),
-      album: "RadioMe",
+      album: "GlobeWave",
       artwork,
     });
     const handlers = [
