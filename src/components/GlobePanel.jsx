@@ -21,12 +21,18 @@ export default function GlobePanel({
 }) {
   const wrapRef = useRef(null);
   const globeRef = useRef(null);
+  // `size` is the square dimension used by the Meridian SVG globe (it's a
+  // fixed-size projection). `panel` is the full panel rect used by the
+  // GlobeWave three.js canvas — letting the canvas fill the panel means
+  // there's no rectangular contrast against the page bg-radial.
   const [size, setSize] = useState(560);
+  const [panel, setPanel] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
+      setPanel({ width, height });
       const minSide = compact ? 260 : 360;
       const padX = compact ? 32 : 80;
       const padY = compact ? 280 : 200;
@@ -121,11 +127,16 @@ export default function GlobePanel({
         </div>
       )}
 
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-        {theme === "globewave" ? (
-          <Suspense fallback={<Spinner size={28} color="var(--accent)" />}>
+      {theme === "globewave" ? (
+        <div style={{ position: "absolute", inset: 0 }}>
+          <Suspense fallback={
+            <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+              <Spinner size={28} color="var(--accent)" />
+            </div>
+          }>
             <GlobeWaveGlobe
-              size={size}
+              width={panel.width}
+              height={panel.height}
               stations={globeStations}
               activeId={activeId}
               selectedId={selectedId}
@@ -133,7 +144,9 @@ export default function GlobePanel({
               mode={mode}
             />
           </Suspense>
-        ) : (
+        </div>
+      ) : (
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
           <InteractiveGlobe
             ref={globeRef}
             size={size}
@@ -142,8 +155,8 @@ export default function GlobePanel({
             selectedId={selectedId}
             onSelectStation={onSelectStation}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {selectedStation && (
         <div

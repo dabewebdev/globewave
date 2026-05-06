@@ -12,7 +12,8 @@ const TEX_DAY = "https://unpkg.com/three-globe@2.31.1/example/img/earth-day.jpg"
 const TEX_BUMP = "https://unpkg.com/three-globe@2.31.1/example/img/earth-topology.png";
 
 export default function GlobeWaveGlobe({
-  size = 560,
+  width = 560,
+  height = 560,
   stations,
   activeId,
   selectedId,
@@ -61,8 +62,8 @@ export default function GlobeWaveGlobe({
   return (
     <Globe
       ref={globeRef}
-      width={size}
-      height={size}
+      width={width}
+      height={height}
       backgroundColor="rgba(0,0,0,0)"
       globeImageUrl={mode === "light" ? TEX_DAY : TEX_NIGHT}
       bumpImageUrl={TEX_BUMP}
