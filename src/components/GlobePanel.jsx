@@ -72,6 +72,7 @@ export default function GlobePanel({
 
   return (
     <div ref={wrapRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      {theme === "meridian" && (
       <svg
         style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
         viewBox="0 0 920 668"
@@ -80,6 +81,7 @@ export default function GlobePanel({
         <line x1="0" y1="334" x2="920" y2="334" stroke="var(--line)" strokeWidth=".5" strokeDasharray="2 4" />
         <line x1="460" y1="0" x2="460" y2="668" stroke="var(--line)" strokeWidth=".5" strokeDasharray="2 4" />
       </svg>
+      )}
 
       {selectedStation && (
         <div

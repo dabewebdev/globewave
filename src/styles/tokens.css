@@ -119,14 +119,15 @@
   --accent-fg: #052e1f;
 
   /* dark defaults — the original GlobeWave look. Surfaces are solid (no
-     backdrop-filter blur to back them up) so cards stand off the bg. */
+     backdrop-filter blur to back them up) so cards stand off the bg. Lines
+     stay subtle so layout dividers don't read as a frame around the globe. */
   --bg: #020617;
   --bg-elev: #0b1424;
   --bg-card: rgba(255, 255, 255, 0.10);
   --bg-input: rgba(255, 255, 255, 0.10);
-  --line: rgba(255, 255, 255, 0.12);
-  --line-strong: rgba(255, 255, 255, 0.20);
-  --hairline: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.05);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --hairline: rgba(255, 255, 255, 0.04);
 
   --fg: #ffffff;
   --fg-muted: rgba(255, 255, 255, 0.72);
