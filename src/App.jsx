@@ -6,6 +6,7 @@ import PlayerBar from "./components/PlayerBar.jsx";
 import NowPlayingSheet from "./components/NowPlayingSheet.jsx";
 import SettingsPage from "./components/SettingsPage.jsx";
 import MobileTabs from "./components/MobileTabs.jsx";
+import PrivacyPage from "./components/PrivacyPage.jsx";
 import usePlayer from "./hooks/usePlayer.js";
 import { useIsMobile, useIsTablet } from "./hooks/useMediaQuery.js";
 import {
@@ -34,6 +35,16 @@ const DEFAULT_SETTINGS = {
 
 const VALID_THEMES = ["meridian", "globewave"];
 const VALID_MODES = ["light", "dark"];
+
+function routeFromPath(pathname) {
+  if (pathname === "/privacy") return "privacy";
+  return "browse";
+}
+
+function pathFromRoute(route) {
+  if (route === "privacy") return "/privacy";
+  return "/";
+}
 
 function loadJSON(key, fallback) {
   try {
@@ -75,7 +86,7 @@ export default function App() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
 
-  const [route, setRoute] = useState("browse");
+  const [route, setRoute] = useState(() => routeFromPath(window.location.pathname));
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState(() => loadJSON(COUNTRY_KEY, "WW"));
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -120,6 +131,21 @@ export default function App() {
   useEffect(() => saveJSON(SETTINGS_KEY, settings), [settings]);
   useEffect(() => saveString(THEME_KEY, theme), [theme]);
   useEffect(() => saveString(MODE_KEY, mode), [mode]);
+
+  useEffect(() => {
+    const nextPath = pathFromRoute(route);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+  }, [route]);
+
+  useEffect(() => {
+    function onPopState() {
+      setRoute(routeFromPath(window.location.pathname));
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   // Load countries once
   useEffect(() => {
@@ -319,12 +345,17 @@ export default function App() {
         compact={isMobile}
       />
 
-      {route === "settings" ? (
+      {route === "privacy" ? (
+        <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+          <PrivacyPage onBack={() => setRoute("browse")} />
+        </div>
+      ) : route === "settings" ? (
         <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
           <SettingsPage
             settings={settings}
             onChange={updateSetting}
             onBack={() => setRoute("browse")}
+            onPrivacy={() => setRoute("privacy")}
             theme={theme}
             onTheme={setTheme}
             mode={mode}

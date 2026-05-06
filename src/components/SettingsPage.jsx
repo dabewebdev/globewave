@@ -101,6 +101,7 @@ export default function SettingsPage({
   settings,
   onChange,
   onBack,
+  onPrivacy,
   theme,
   onTheme,
   mode,
@@ -207,6 +208,21 @@ export default function SettingsPage({
           <div className="t-mono" style={{ marginTop: 12, color: "var(--fg-dim)" }}>
             v0.6.0
           </div>
+          <button
+            onClick={onPrivacy}
+            style={{
+              marginTop: 14,
+              padding: 0,
+              background: "transparent",
+              border: "none",
+              color: "var(--accent)",
+              fontFamily: "var(--font-body)",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Privacy Policy
+          </button>
         </div>
 
         <button

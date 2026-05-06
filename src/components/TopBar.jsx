@@ -18,6 +18,7 @@ export default function TopBar({
     ["browse", "Browse"],
     ["favorites", "Favorites"],
     ["settings", "Settings"],
+    ["privacy", "Privacy"],
   ];
 
   return (
@@ -81,6 +82,25 @@ export default function TopBar({
             </nav>
             <div style={{ width: 1, height: 18, background: "var(--line-strong)" }} />
           </>
+        )}
+        {compact && (
+          <button
+            onClick={() => onRoute("privacy")}
+            style={{
+              height: 32,
+              padding: "0 8px",
+              background: "transparent",
+              border: "1px solid transparent",
+              color: route === "privacy" ? "var(--fg)" : "var(--fg-muted)",
+              fontFamily: "var(--font-body)",
+              fontSize: 12,
+              cursor: "pointer",
+              borderBottom:
+                route === "privacy" ? "1px solid var(--accent)" : "1px solid transparent",
+            }}
+          >
+            Privacy
+          </button>
         )}
         <button
           style={iconBtn}
