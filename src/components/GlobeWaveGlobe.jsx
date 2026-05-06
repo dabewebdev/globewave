@@ -40,6 +40,21 @@ export default function GlobeWaveGlobe({
     );
   }, [selectedId, stations]);
 
+  // Force the WebGL renderer's clear color to fully transparent. The
+  // backgroundColor prop alone often leaves the renderer with an opaque
+  // clearColor (alpha=1), which paints a flat rectangle behind the globe
+  // and blocks the page bg-radial from showing through.
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const r = globeRef.current.renderer?.();
+    if (!r) return;
+    r.setClearColor(0x000000, 0);
+    if ("outputColorSpace" in r) {
+      // Keep things consistent if the lib hasn't already set this.
+      r.outputColorSpace = r.outputColorSpace || "srgb";
+    }
+  }, []);
+
   const accent = mode === "light" ? "#0d9968" : "#10b981";
   const accentBright = mode === "light" ? "#10b981" : "#34d399";
 
