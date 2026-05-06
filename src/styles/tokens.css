@@ -197,6 +197,13 @@
 .frame { color: var(--fg); background: var(--bg); }
 .frame *, .frame *::before, .frame *::after { box-sizing: border-box; }
 .frame :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-control); }
+/* Suppress focus outline on the three.js canvas — keyboard focus on a 3D
+   scene has no meaningful action, and the rectangular outline reads as a
+   bounding box around the globe. */
+.frame canvas:focus,
+.frame canvas:focus-visible {
+  outline: none;
+}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes radioPulse {
