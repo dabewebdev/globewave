@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dmclabs.globewave",
+      "sha256_cert_fingerprints": [
+        "0B:77:33:0F:70:1B:6F:B8:36:4A:85:9B:59:BF:7D:5E:4B:47:2B:45:E9:3F:EB:21:B1:0E:11:D9:86:7B:CA:9D",
+        "20:3F:33:47:45:9A:61:57:B4:D9:25:33:4A:3E:29:C1:64:51:EB:E8:EF:20:F3:6C:0F:9D:20:F2:99:17:E5:DE"
+      ]
+    }
+  }
+]
