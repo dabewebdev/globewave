@@ -318,3 +318,66 @@ function EmptyList({ query, country, favoritesOnly, favoritesCount, onClearQuery
             marginTop: 8,
             letterSpacing: "-.01em",
           }}
+        >
+          0 stations found.
+        </div>
+        <div className="t-body" style={{ color: "var(--fg-muted)", marginTop: 6 }}>
+          Try a single tag, or broaden to neighbours.
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
+          <button
+            onClick={onClearQuery}
+            style={{
+              height: 32,
+              padding: "0 12px",
+              background: "transparent",
+              border: "1px solid var(--line-strong)",
+              borderRadius: "var(--r-control)",
+              color: "var(--fg)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            CLEAR
+          </button>
+          {country !== "WW" && (
+            <button
+              onClick={onWiden}
+              style={{
+                height: 32,
+                padding: "0 12px",
+                background: "var(--accent)",
+                color: "var(--accent-fg)",
+                border: "none",
+                borderRadius: "var(--r-control)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+            >
+              SEARCH WORLDWIDE
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: 28, textAlign: "center" }}>
+      <div
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 22,
+          color: "var(--fg)",
+          letterSpacing: "-.01em",
+        }}
+      >
+        No stations here.
+      </div>
+      <div className="t-body" style={{ color: "var(--fg-muted)", marginTop: 6 }}>
+        Pick a different country, or go worldwide.
+      </div>
+    </div>
+  );
+}
