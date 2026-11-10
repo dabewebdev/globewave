@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { I } from "./Icons.jsx";
 import { Chip, Eyebrow, iconBtn } from "./ui.jsx";
 import CountryPicker from "./CountryPicker.jsx";
@@ -23,6 +24,8 @@ export default function Sidebar({
   onToggleFav,
   compact = false,
 }) {
+  const listRef = useRef(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const localCount = filtered.length;
   const headlineCountry =
     country === "WW"
@@ -30,6 +33,20 @@ export default function Sidebar({
       : countries.find((c) => c.code === country)?.name || country;
 
   const padX = compact ? 16 : 22;
+
+  // A country or filter change represents a new list. Reset the nested
+  // scroller so Android WebView users never remain stranded at the old
+  // scroll position while the replacement stations are loading.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = 0;
+    setShowBackToTop(false);
+  }, [country, query, favoritesOnly]);
+
+  const scrollToTop = () => {
+    listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <aside
@@ -153,36 +170,90 @@ export default function Sidebar({
         )}
       </div>
 
-      <div style={{ overflow: "auto", flex: 1, borderTop: "1px solid var(--line)" }}>
-        {loading && filtered.length === 0 ? (
-          <div style={{ padding: 28, textAlign: "center", color: "var(--fg-muted)" }}>
-            <div className="t-mono">FETCHING STATIONS…</div>
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyList
-            query={query}
-            country={country}
-            favoritesOnly={favoritesOnly}
-            favoritesCount={favorites.length}
-            onClearQuery={() => onQuery("")}
-            onWiden={() => onCountry("WW")}
-            onShowAll={() => onFavoritesOnly(false)}
-          />
-        ) : (
-          filtered.map((s, i) => (
-            <StationRow
-              key={s.id}
-              s={s}
-              n={i + 1}
-              isSelected={selectedId === s.id}
-              isActive={activeId === s.id}
-              playState={playState}
-              isFav={favorites.includes(s.id)}
-              onFocus={() => onSelect(s.id)}
-              onPlay={() => onPlay(s.id)}
-              onFav={() => onToggleFav(s.id)}
+      <div
+        style={{
+          position: "relative",
+          flex: 1,
+          minHeight: 0,
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        <div
+          ref={listRef}
+          onScroll={(event) => setShowBackToTop(event.currentTarget.scrollTop > 360)}
+          aria-busy={loading}
+          style={{
+            position: "absolute",
+            inset: 0,
+            overflowX: "hidden",
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorY: "contain",
+            touchAction: "pan-y",
+            scrollbarGutter: "stable",
+          }}
+        >
+          {loading && filtered.length === 0 ? (
+            <div style={{ padding: 28, textAlign: "center", color: "var(--fg-muted)" }}>
+              <div className="t-mono">FETCHING STATIONS…</div>
+              <div className="t-body" style={{ marginTop: 8 }}>
+                You can still change the country or search above.
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyList
+              query={query}
+              country={country}
+              favoritesOnly={favoritesOnly}
+              favoritesCount={favorites.length}
+              onClearQuery={() => onQuery("")}
+              onWiden={() => onCountry("WW")}
+              onShowAll={() => onFavoritesOnly(false)}
             />
-          ))
+          ) : (
+            filtered.map((s, i) => (
+              <StationRow
+                key={s.id}
+                s={s}
+                n={i + 1}
+                isSelected={selectedId === s.id}
+                isActive={activeId === s.id}
+                playState={playState}
+                isFav={favorites.includes(s.id)}
+                onFocus={() => onSelect(s.id)}
+                onPlay={() => onPlay(s.id)}
+                onFav={() => onToggleFav(s.id)}
+              />
+            ))
+          )}
+        </div>
+
+        {showBackToTop && (
+          <button
+            type="button"
+            onClick={scrollToTop}
+            aria-label="Back to top of station list"
+            style={{
+              position: "absolute",
+              right: compact ? 14 : 18,
+              bottom: 14,
+              zIndex: 3,
+              height: 38,
+              padding: "0 14px",
+              border: "1px solid var(--line-strong)",
+              borderRadius: 999,
+              background: "var(--accent)",
+              color: "var(--accent-fg)",
+              boxShadow: "0 8px 24px rgba(0, 0, 0, .24)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: ".04em",
+              cursor: "pointer",
+            }}
+          >
+            ↑ BACK TO TOP
+          </button>
         )}
       </div>
     </aside>
