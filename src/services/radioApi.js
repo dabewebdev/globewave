@@ -100,21 +100,26 @@ function normalize(rawStation) {
   return { ...partial, ...fb, needsGeocode: !!partial.state || !!partial.country };
 }
 
-async function tryMirrors(path, init) {
-  let lastErr;
-  for (const base of MIRRORS) {
-    try {
-      const res = await fetch(`${base}${path}`, init);
-      if (!res.ok) {
-        lastErr = new Error(`${base} → ${res.status}`);
-        continue;
-      }
-      return await res.json();
-    } catch (err) {
-      lastErr = err;
-    }
+async function fetchMirror(base, path, init) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(`${base}${path}`, { ...init, signal: controller.signal });
+    if (!res.ok) throw new Error(`${base} → ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timeout);
   }
-  throw lastErr || new Error("All mirrors failed");
+}
+
+async function tryMirrors(path, init) {
+  // Race the independent community mirrors. A slow/dead first host should
+  // never leave Android users staring at FETCHING STATIONS indefinitely.
+  try {
+    return await Promise.any(MIRRORS.map((base) => fetchMirror(base, path, init)));
+  } catch {
+    throw new Error("All radio directory mirrors failed");
+  }
 }
 
 // Pull together the always-on curated picks (SomaFM + the static curated list)

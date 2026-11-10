@@ -26,6 +26,8 @@ const SELECTED_KEY = "radiome:selected";
 const SETTINGS_KEY = "radiome:settings";
 const THEME_KEY = "radiome:theme";
 const MODE_KEY = "radiome:mode";
+const STATION_CACHE_PREFIX = "globewave:stations:";
+const STATION_CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 const DEFAULT_SETTINGS = {
   reduceMotion: false,
@@ -79,6 +81,30 @@ function saveString(key, value) {
     localStorage.setItem(key, value);
   } catch {
     /* ignore */
+  }
+}
+
+function readStationCache(countryCode) {
+  try {
+    const raw = localStorage.getItem(`${STATION_CACHE_PREFIX}${countryCode}`);
+    if (!raw) return [];
+    const cached = JSON.parse(raw);
+    if (!cached?.ts || !Array.isArray(cached.stations)) return [];
+    if (Date.now() - cached.ts > STATION_CACHE_MAX_AGE) return [];
+    return cached.stations;
+  } catch {
+    return [];
+  }
+}
+
+function writeStationCache(countryCode, nextStations) {
+  try {
+    localStorage.setItem(
+      `${STATION_CACHE_PREFIX}${countryCode}`,
+      JSON.stringify({ ts: Date.now(), stations: nextStations })
+    );
+  } catch {
+    /* A full storage quota must never prevent listening. */
   }
 }
 
@@ -166,7 +192,9 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     let cancelGeocode = () => {};
+    const cachedStations = readStationCache(country);
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (cachedStations.length > 0) setStations(cachedStations);
     setLoading(true);
     setLoadError("");
     const fetcher = country === "WW" ? getTopStations() : getStationsByCountry(country);
@@ -174,6 +202,7 @@ export default function App() {
       .then((list) => {
         if (cancelled) return;
         setStations(list);
+        writeStationCache(country, list);
         if (list.length === 0) {
           setLoadError("No stations available for this region.");
           return;
@@ -196,8 +225,12 @@ export default function App() {
       })
       .catch(() => {
         if (cancelled) return;
-        setStations([]);
-        setLoadError("Couldn't reach the radio directory. Try again or pick another country.");
+        if (cachedStations.length === 0) {
+          setStations([]);
+          setLoadError("Couldn't reach the radio directory. Try again or pick another country.");
+        } else {
+          setLoadError("Showing saved stations while the radio directory is unavailable.");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -326,7 +359,8 @@ export default function App() {
       className="frame"
       style={{
         width: "100%",
-        height: "100vh",
+        height: "100dvh",
+        minHeight: 0,
         background: "var(--bg)",
         backgroundImage: "var(--bg-radial)",
         position: "relative",

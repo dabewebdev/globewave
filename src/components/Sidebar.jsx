@@ -64,12 +64,19 @@ export default function Sidebar({
         height: "100%",
         minHeight: 0,
         flex: 1,
+        overflow: "hidden",
+        background: "var(--bg)",
+        isolation: "isolate",
       }}
     >
       <div
         style={{
           padding: compact ? `14px ${padX}px 12px` : "20px 22px 18px",
           borderBottom: "1px solid var(--line)",
+          flexShrink: 0,
+          position: "relative",
+          zIndex: 2,
+          background: "var(--bg)",
         }}
       >
         <Eyebrow>INDEX</Eyebrow>
@@ -98,6 +105,10 @@ export default function Sidebar({
           display: "flex",
           flexDirection: "column",
           gap: 10,
+          flexShrink: 0,
+          position: "relative",
+          zIndex: 2,
+          background: "var(--bg)",
         }}
       >
         <div style={{ position: "relative" }}>
@@ -183,6 +194,9 @@ export default function Sidebar({
           flex: 1,
           minHeight: 0,
           borderTop: "1px solid var(--line)",
+          overflow: "hidden",
+          zIndex: 1,
+          background: "var(--bg)",
         }}
       >
         <div
@@ -198,6 +212,7 @@ export default function Sidebar({
             overscrollBehaviorY: "contain",
             touchAction: "pan-y",
             scrollbarGutter: "stable",
+            background: "var(--bg)",
           }}
         >
           {loading && filtered.length === 0 ? (
